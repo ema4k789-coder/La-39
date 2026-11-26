@@ -84,8 +84,8 @@
 
   async function arrancarLocal() {
     aviso("Abriendo la app offline...");
-    await cargar("llaves.js?v=1");
-    await cargar("acceso.js?v=1");
+    await cargar("llaves.js?v=2");
+    await cargar("acceso.js?v=2");
     await window.AccesoApp.preparar();
     await cargar("datos-calles.js");
     await cargar("vendor/xlsx.full.min.js");
@@ -110,7 +110,8 @@
     }
     const almacen = window.Almacen.crearAlmacenIndexedDB({
       nombre: params.get("db") || "escuela39", revision: inicial.revision, datos: inicial.datos,
-      anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria
+      anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria,
+      semillaAnterior: 151
     });
     if (params.has("reiniciar")) await almacen.reiniciar(inicial.datos, inicial.revision,
       { anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria });

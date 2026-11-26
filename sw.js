@@ -1,7 +1,8 @@
 "use strict";
 // Service worker de la app EP 39 (PWA): guarda toda la aplicación para que abra
 // sin internet. Al cambiar la versión en version.js se descarta la caché vieja.
-importScripts("./version.js");
+// Actualización 2.7.1: base con los 784 alumnos de la app del teléfono.
+importScripts("./version.js?v=2");
 
 const CACHE = "ep39-" + self.VERSION_APP;
 const ARCHIVOS = [
@@ -53,7 +54,11 @@ const ARCHIVOS = [
 self.addEventListener("install", evento => {
   evento.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ARCHIVOS))
+      .then(cache => Promise.all(ARCHIVOS.map(async ruta => {
+        const respuesta = await fetch(ruta, { cache: "reload" });
+        if (!respuesta.ok) throw new Error("No se pudo guardar " + ruta);
+        await cache.put(ruta, respuesta);
+      })))
       .then(() => self.skipWaiting())
   );
 });

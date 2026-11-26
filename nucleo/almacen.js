@@ -110,11 +110,19 @@
               registro = { id: 1, revision: opciones.revision || 1, datos: opciones.datos, ...meta };
               store.put(registro);
             } else {
-              const meta = normalizarMeta(registro);
-              if (registro.anio !== meta.anio || registro.anio_egreso !== meta.anio_egreso ||
-                  !Array.isArray(registro.memoria)) {
-                Object.assign(registro, meta);
+              const semillas = Array.isArray(opciones.semillaAnterior)
+                ? opciones.semillaAnterior : [opciones.semillaAnterior];
+              if (semillas.includes(registro.revision) && Number(opciones.revision) > registro.revision) {
+                registro = { id: 1, revision: opciones.revision, datos: opciones.datos,
+                  ...normalizarMeta(opciones) };
                 store.put(registro);
+              } else {
+                const meta = normalizarMeta(registro);
+                if (registro.anio !== meta.anio || registro.anio_egreso !== meta.anio_egreso ||
+                    !Array.isArray(registro.memoria)) {
+                  Object.assign(registro, meta);
+                  store.put(registro);
+                }
               }
             }
             terminar({ revision: registro.revision, datos: registro.datos,
