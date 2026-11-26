@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f2ec">
+  <title>Padrón · Escuela Primaria 39</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a8440a'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%23fff' text-anchor='middle'%3E39%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="estilos.css?v=6">
+  <link rel="stylesheet" href="../estilos-acceso.css?v=1">
+</head>
+<body>
+  <div class="app">
+    <header class="cabecera">
+      <div class="marca">
+        <div class="escudo" id="escudoCreditos" aria-hidden="true">39</div>
+        <div class="marca-texto">
+          <h1>Escuela Primaria 39</h1>
+          <p>Padrón de alumnos<span class="punto-medio">·</span><span id="anioCabecera">2026</span></p>
+        </div>
+      </div>
+      <div class="cabecera-acciones">
+        <span class="etiqueta-anio" id="etiquetaAnio">Año 2026</span>
+        <button type="button" id="btnAgregar" class="boton primario">
+          <span aria-hidden="true" class="mas">+</span> Alumno
+        </button>
+      </div>
+    </header>
+
+    <nav class="pestanas" role="tablist" aria-label="Secciones de la app">
+      <button type="button" role="tab" id="tabAlumnos" data-vista="alumnos" aria-selected="true" aria-controls="vistaAlumnos">
+        Alumnos <span class="contador" id="contadorAlumnos">0</span>
+      </button>
+      <button type="button" role="tab" id="tabCursos" data-vista="cursos" aria-selected="false" aria-controls="vistaCursos" tabindex="-1">Cursos</button>
+      <button type="button" role="tab" id="tabEstadisticas" data-vista="estadisticas" aria-selected="false" aria-controls="vistaEstadisticas" tabindex="-1">Estadísticas</button>
+      <button type="button" role="tab" id="tabDatos" data-vista="datos" aria-selected="false" aria-controls="vistaDatos" tabindex="-1">Datos</button>
+    </nav>
+
+    <main class="contenido">
+      <section class="vista activa" id="vistaAlumnos" role="tabpanel" aria-labelledby="tabAlumnos">
+        <div class="barra-busqueda">
+          <div class="buscador">
+            <svg class="icono-lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+            <input id="buscar" type="search" placeholder="Nombre, DNI, dirección o curso" autocomplete="off" spellcheck="false" aria-label="Buscar alumnos" aria-controls="listaAlumnos">
+            <button type="button" id="limpiarBusqueda" class="limpiar-busqueda oculto" aria-label="Borrar búsqueda" title="Borrar búsqueda">×</button>
+          </div>
+          <div class="filtros-fila">
+            <div class="chips" id="chipsGrado" role="group" aria-label="Filtrar por grado">
+              <button type="button" class="chip activo" data-grado="" aria-pressed="true">Todos</button>
+              <button type="button" class="chip" data-grado="1" aria-pressed="false">1°</button>
+              <button type="button" class="chip" data-grado="2" aria-pressed="false">2°</button>
+              <button type="button" class="chip" data-grado="3" aria-pressed="false">3°</button>
+              <button type="button" class="chip" data-grado="4" aria-pressed="false">4°</button>
+              <button type="button" class="chip" data-grado="5" aria-pressed="false">5°</button>
+              <button type="button" class="chip" data-grado="6" aria-pressed="false">6°</button>
+            </div>
+            <div class="selects-filtro">
+              <select id="filtroDivision" aria-label="Filtrar por división">
+                <option value="">Todas las divisiones</option>
+                <option value="A">División A</option>
+                <option value="B">División B</option>
+                <option value="C">División C</option>
+                <option value="D">División D</option>
+              </select>
+              <select id="orden" aria-label="Ordenar la lista">
+                <option value="apellido">Nombre A-Z</option>
+                <option value="curso">Curso</option>
+                <option value="nacimiento">Mayores primero</option>
+                <option value="modificado">Últimos cambios</option>
+              </select>
+            </div>
+          </div>
+          <div class="filtros-fila secundaria">
+            <span class="grupo-faltantes" role="group" aria-label="Filtrar por datos faltantes">
+              <span class="texto-faltantes">Faltan:</span>
+              <button type="button" class="chip chip-faltante" data-falta="dni" aria-pressed="false">DNI</button>
+              <button type="button" class="chip chip-faltante" data-falta="direccion" aria-pressed="false">Dirección</button>
+              <button type="button" class="chip chip-faltante" data-falta="nacimiento" aria-pressed="false">Nacimiento</button>
+            </span>
+            <span class="resumen-resultados" id="resumenResultados" aria-live="polite"></span>
+            <button type="button" id="limpiarFiltros" class="enlace oculto">Limpiar filtros</button>
+          </div>
+        </div>
+        <ul id="listaAlumnos" class="lista" aria-label="Lista de alumnos"></ul>
+        <div class="vacio oculto" id="sinResultados">
+          <div class="vacio-icono" aria-hidden="true">?</div>
+          <h2>No encontré alumnos</h2>
+          <p>Probá con otro nombre, DNI, dirección o curso.</p>
+          <button type="button" id="btnLimpiarVacio" class="boton">Ver todos</button>
+        </div>
+      </section>
+
+      <section class="vista" id="vistaCursos" role="tabpanel" aria-labelledby="tabCursos" hidden>
+        <div class="vista-scroll">
+          <div class="seccion-cabecera">
+            <div>
+              <h2>Cursos</h2>
+              <p id="resumenCursos">24 divisiones</p>
+            </div>
+            <button type="button" id="btnExportarTodo" class="boton">Exportar todo</button>
+          </div>
+          <div class="grilla-cursos" id="grillaCursos"></div>
+          <p class="nota-pie">Cada curso se puede exportar o completar con un Excel propio. Los archivos se guardan en la carpeta de descargas.</p>
+        </div>
+      </section>
+
+      <section class="vista" id="vistaEstadisticas" role="tabpanel" aria-labelledby="tabEstadisticas" hidden>
+        <div class="vista-scroll">
+          <div class="seccion-cabecera">
+            <div>
+              <h2>Estadísticas</h2>
+              <p>Un pantallazo del padrón y de los datos que faltan.</p>
+            </div>
+          </div>
+          <div class="tarjetas-stats" id="tarjetasStats"></div>
+          <div class="panel-stats">
+            <h3>Ficha por grado</h3>
+            <div class="grilla-grados" id="tarjetasGrado"></div>
+            <p class="aclaracion">Cada grado muestra sus divisiones y cuántos alumnos tienen cada dato. Una ficha completa tiene DNI, nacimiento, dirección, teléfono y responsable.</p>
+          </div>
+          <div class="panel-stats">
+            <h3>Alumnos por división</h3>
+            <div class="barras" id="barrasDivision"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vista" id="vistaDatos" role="tabpanel" aria-labelledby="tabDatos" hidden>
+        <div class="vista-scroll">
+          <div class="seccion-cabecera">
+            <div>
+              <h2>Datos</h2>
+              <p>Año lectivo, copias de seguridad y padrón inicial.</p>
+            </div>
+          </div>
+
+          <div class="panel-datos">
+            <div class="panel-texto">
+              <h3>Año lectivo</h3>
+              <p>Se usa en la cabecera, en las planillas exportadas y en las copias de seguridad.</p>
+            </div>
+            <form id="formAnio" class="form-anio">
+              <label class="campo-inline" for="anioLectivo">Año</label>
+              <input id="anioLectivo" type="number" min="2000" max="2100" step="1" inputmode="numeric" required>
+              <button type="submit" class="boton primario">Guardar</button>
+            </form>
+          </div>
+
+          <div class="panel-datos columna">
+            <div class="panel-texto">
+              <h3>Actualización de la app del mapa</h3>
+              <p>Cargá el archivo .json que exporta la app de mapas de la Escuela 39. Trae todos los cursos y se puede actualizar sin borrar o reemplazar el padrón.</p>
+            </div>
+            <div class="botones-datos">
+              <button type="button" id="abrirActualizacion" class="boton primario">Cargar actualización (.json)</button>
+            </div>
+          </div>
+
+          <div class="panel-datos columna">
+            <div class="panel-texto">
+              <h3>Importar Excel por curso</h3>
+              <p>Elegí el curso y después el archivo .xlsx, .xls o .csv. Las columnas se reconocen solas y se puede completar o reemplazar ese curso.</p>
+            </div>
+            <div class="fila-importar-datos">
+              <label class="campo-inline" for="cursoImportarDatos">Curso</label>
+              <select id="cursoImportarDatos" aria-label="Curso para importar el Excel"></select>
+              <button type="button" id="importarCursoDatos" class="boton">Elegir Excel</button>
+            </div>
+          </div>
+
+          <div class="panel-datos columna">
+            <div class="panel-texto">
+              <h3>Copia de seguridad</h3>
+              <p>Descargá una copia para guardarla o pasar el padrón a otra computadora.</p>
+            </div>
+            <div class="botones-datos">
+              <button type="button" id="copiaJson" class="boton">Guardar copia (.json)</button>
+              <button type="button" id="elegirCopia" class="boton">Restaurar copia</button>
+              <input type="file" id="archivoCopia" accept=".json,application/json" hidden>
+            </div>
+            <div id="confirmarCopia" class="caja-confirmar oculto">
+              <p id="detalleCopia"></p>
+              <div class="botones-datos">
+                <button type="button" id="btnReemplazarCopia" class="boton primario">Reemplazar padrón</button>
+                <button type="button" id="btnCancelarCopia" class="boton">Cancelar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-datos columna">
+            <div class="panel-texto">
+              <h3>Planillas</h3>
+              <p>Padrón completo, una planilla por curso o un modelo vacío para cargar datos.</p>
+            </div>
+            <div class="botones-datos">
+              <button type="button" id="exportarTodoDatos" class="boton">Exportar padrón completo</button>
+              <button type="button" id="btnModelo" class="boton">Descargar planilla modelo</button>
+            </div>
+          </div>
+
+          <div class="panel-datos columna oculto" id="panelCompartir">
+            <div class="panel-texto">
+              <h3>Compartir la app</h3>
+              <p>Enviá el instalable por WhatsApp o como adjunto. También queda guardado en Descargas/Escuela 39 Padron.</p>
+            </div>
+            <div class="botones-datos">
+              <button type="button" id="compartirApp" class="boton primario">Compartir la app</button>
+            </div>
+          </div>
+
+          <div class="panel-datos columna">
+            <div class="panel-texto">
+              <h3>Información</h3>
+              <p id="infoAlumnos">—</p>
+              <dl class="datos-lista">
+                <div><dt>Base inicial</dt><dd id="infoFuente">—</dd></div>
+                <div><dt>Generada</dt><dd id="infoGenerado">—</dd></div>
+                <div><dt>Último cambio</dt><dd id="infoGuardado">—</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <div class="panel-datos columna panel-peligro">
+            <div class="panel-texto">
+              <h3>Padrón inicial</h3>
+              <p>Vuelve a los alumnos del archivo de actualización. Se pierden los cambios y las altas de este dispositivo.</p>
+            </div>
+            <div class="botones-datos">
+              <button type="button" id="restaurarInicial" class="boton peligro">Restaurar padrón inicial</button>
+            </div>
+            <p id="avisoRestaurar" class="aviso oculto" role="alert"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="dialogoAlumno" class="hoja-dialogo" aria-labelledby="tituloDialogoAlumno">
+    <form id="formAlumno" novalidate>
+      <header class="dialogo-cabecera">
+        <div>
+          <h2 id="tituloDialogoAlumno">Nuevo alumno</h2>
+          <p id="subtituloDialogoAlumno">Completá los datos que tengas.</p>
+        </div>
+        <button type="button" id="cerrarDialogoAlumno" class="boton-icono" aria-label="Cerrar" title="Cerrar">×</button>
+      </header>
+      <div class="dialogo-cuerpo">
+        <p id="avisoDuplicado" class="aviso oculto" role="alert"></p>
+        <div class="campos">
+          <label class="campo ancho">Nombre y apellido
+            <input id="campoNombre" type="text" maxlength="90" autocomplete="off" required placeholder="Como figura en el DNI">
+          </label>
+          <label class="campo">DNI
+            <input id="campoDni" type="text" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="Sin puntos">
+          </label>
+          <label class="campo">Fecha de nacimiento
+            <input id="campoNacimiento" type="date">
+          </label>
+          <label class="campo">Grado
+            <select id="campoGrado">
+              <option value="1">1°</option><option value="2">2°</option><option value="3">3°</option>
+              <option value="4">4°</option><option value="5">5°</option><option value="6">6°</option>
+            </select>
+          </label>
+          <label class="campo">División
+            <select id="campoDivision">
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+            </select>
+          </label>
+          <label class="campo ancho">Dirección
+            <input id="campoDireccion" type="text" maxlength="140" autocomplete="off" placeholder="Calle, número, entre calles">
+          </label>
+          <label class="campo">Teléfono
+            <input id="campoTelefono" type="tel" maxlength="22" autocomplete="off" placeholder="221 ...">
+          </label>
+          <label class="campo">Nacionalidad
+            <input id="campoNacionalidad" type="text" maxlength="50" autocomplete="off">
+          </label>
+          <label class="campo ancho">Responsable
+            <input id="campoResponsable" type="text" maxlength="90" autocomplete="off" placeholder="Padre, madre o tutor">
+          </label>
+          <label class="campo">Actividad del responsable
+            <input id="campoActividad" type="text" maxlength="70" autocomplete="off">
+          </label>
+          <label class="campo ancho">Observaciones
+            <textarea id="campoObservaciones" rows="3" maxlength="500"></textarea>
+          </label>
+          <div class="campo ancho bloque-etiquetas">
+            <span class="titulo-etiquetas">Observaciones rápidas</span>
+            <div id="listaEtiquetas" class="lista-etiquetas" role="group" aria-label="Observaciones rápidas"></div>
+            <div class="fila-etiqueta-nueva">
+              <input id="nuevaEtiqueta" type="text" maxlength="40" autocomplete="off" aria-label="Nueva etiqueta de observaciones" placeholder="Agregar palabra o etiqueta">
+              <button type="button" id="btnAgregarEtiqueta" class="boton">Agregar</button>
+            </div>
+            <p class="ayuda-etiquetas">Se suman a Observaciones separadas con punto y coma. Podés escribir más texto arriba.</p>
+          </div>
+        </div>
+      </div>
+      <footer class="dialogo-pie">
+        <button type="button" id="btnEliminar" class="boton peligro-texto oculto">Eliminar</button>
+        <span class="espaciador"></span>
+        <button type="button" id="btnCancelarAlumno" class="boton">Cancelar</button>
+        <button type="submit" id="btnGuardarAlumno" class="boton primario">Guardar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="dialogoImportar" class="hoja-dialogo dialogo-ancho" aria-labelledby="tituloImportar">
+    <form id="formImportar" novalidate>
+      <header class="dialogo-cabecera">
+        <div>
+          <h2 id="tituloImportar">Importar Excel</h2>
+          <p id="cursoImportarEtiqueta">1° A</p>
+        </div>
+        <button type="button" id="cerrarImportar" class="boton-icono" aria-label="Cerrar" title="Cerrar">×</button>
+      </header>
+      <div class="dialogo-cuerpo">
+        <div class="bloque-archivo">
+          <label class="boton archivo-boton" for="archivoExcel">Elegir archivo</label>
+          <input type="file" id="archivoExcel" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          <span id="nombreArchivo" class="nombre-archivo">Ningún archivo elegido</span>
+        </div>
+        <p class="ayuda">Acepta .xlsx, .xls y .csv. Las columnas se reconocen solas y podés corregirlas abajo. Las fechas y los DNI se normalizan al importar.</p>
+        <p id="estadoArchivo" class="aviso-info" aria-live="polite"></p>
+
+        <div id="importarOpciones" class="oculto">
+          <div class="fila-importar">
+            <label class="campo">Hoja
+              <select id="hojaImportar"></select>
+            </label>
+            <label class="campo">Fila de títulos
+              <select id="cabeceraImportar"></select>
+            </label>
+          </div>
+
+          <div class="bloque-mapeo">
+            <div class="titulo-bloque">
+              <h3>Columnas del archivo</h3>
+              <button type="button" id="btnModeloImportar" class="enlace">Descargar modelo</button>
+            </div>
+            <div id="mapeoColumnas" class="mapeo-grilla"></div>
+            <p class="ayuda" id="ayudaMapeo"></p>
+          </div>
+
+          <div class="bloque-previa">
+            <div class="titulo-bloque">
+              <h3>Vista previa</h3>
+              <span id="previaResumen" class="previa-resumen"></span>
+            </div>
+            <div class="tabla-scroll">
+              <table class="tabla-previa">
+                <thead><tr><th>Nombre</th><th>DNI</th><th>Nacimiento</th><th>Curso</th><th>Dirección</th></tr></thead>
+                <tbody id="previaCuerpo"></tbody>
+              </table>
+            </div>
+            <p id="avisoImportar" class="aviso oculto" role="status"></p>
+          </div>
+
+          <fieldset class="modo-importar">
+            <legend>¿Qué hacer con lo que ya está cargado?</legend>
+            <label class="opcion-modo">
+              <input type="radio" name="modoImportar" value="actualizar" checked>
+              <span><strong>Actualizar y agregar</strong><small>Completa los datos que faltan y agrega los alumnos nuevos.</small></span>
+            </label>
+            <label class="opcion-modo">
+              <input type="radio" name="modoImportar" value="reemplazar">
+              <span><strong>Reemplazar el curso</strong><small>Borra los alumnos actuales de este curso y carga solo los del archivo.</small></span>
+            </label>
+          </fieldset>
+        </div>
+      </div>
+      <footer class="dialogo-pie">
+        <span class="espaciador"></span>
+        <button type="button" id="btnCancelarImportar" class="boton">Cancelar</button>
+        <button type="submit" id="btnImportar" class="boton primario" disabled>Importar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="dialogoActualizacion" class="hoja-dialogo dialogo-ancho" aria-labelledby="tituloActualizacion">
+    <form id="formActualizacion" novalidate>
+      <header class="dialogo-cabecera">
+        <div>
+          <h2 id="tituloActualizacion">Cargar actualización</h2>
+          <p id="subtituloActualizacion">Archivo .json de la app del mapa · Año 2026</p>
+        </div>
+        <button type="button" id="cerrarActualizacion" class="boton-icono" aria-label="Cerrar" title="Cerrar">×</button>
+      </header>
+      <div class="dialogo-cuerpo">
+        <div class="bloque-archivo">
+          <label class="boton archivo-boton" for="archivoActualizacion">Elegir archivo</label>
+          <input type="file" id="archivoActualizacion" accept=".json,application/json">
+          <span id="nombreArchivoActualizacion" class="nombre-archivo">Ningún archivo elegido</span>
+        </div>
+        <p class="ayuda">Es el mismo archivo que usa la app del mapa en “Actualización”. Se revisa el año lectivo y se guarda una copia antes de cambiar los datos.</p>
+        <p id="estadoActualizacion" class="aviso-info" aria-live="polite"></p>
+
+        <div id="opcionesActualizacion" class="oculto">
+          <div class="bloque-previa">
+            <div class="titulo-bloque">
+              <h3>Qué trae el archivo</h3>
+              <span id="resumenActualizacion" class="previa-resumen"></span>
+            </div>
+            <dl class="datos-lista" id="detalleActualizacion"></dl>
+            <p id="avisoActualizacion" class="aviso oculto" role="status"></p>
+          </div>
+
+          <div class="bloque-previa">
+            <div class="titulo-bloque">
+              <h3>Vista previa</h3>
+              <span id="previaActualizacionResumen" class="previa-resumen"></span>
+            </div>
+            <div class="tabla-scroll">
+              <table class="tabla-previa">
+                <thead><tr><th>Nombre</th><th>DNI</th><th>Curso</th><th>Dirección</th><th>Responsable</th></tr></thead>
+                <tbody id="previaActualizacion"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <fieldset class="modo-importar">
+            <legend>¿Qué hacer con lo que ya está cargado?</legend>
+            <label class="opcion-modo">
+              <input type="radio" name="modoActualizacion" value="actualizar" checked>
+              <span><strong>Actualizar y agregar</strong><small>Completa los datos de los alumnos que ya están y agrega los nuevos. No borra a nadie.</small></span>
+            </label>
+            <label class="opcion-modo">
+              <input type="radio" name="modoActualizacion" value="reemplazar">
+              <span><strong>Reemplazar todo</strong><small>Borra el padrón de este dispositivo y deja solo los alumnos del archivo.</small></span>
+            </label>
+          </fieldset>
+        </div>
+      </div>
+      <footer class="dialogo-pie">
+        <span class="espaciador"></span>
+        <button type="button" id="btnCancelarActualizacion" class="boton">Cancelar</button>
+        <button type="submit" id="btnAplicarActualizacion" class="boton primario" disabled>Aplicar actualización</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="dialogoCreditos" class="dialogo-creditos" aria-labelledby="creditosNombre">
+    <span class="creditos-escudo" aria-hidden="true">39</span>
+    <p class="creditos-etiqueta">Creado por</p>
+    <h2 id="creditosNombre" class="creditos-nombre">Emanuel Alvarez</h2>
+    <p class="creditos-pie">Tocá para cerrar</p>
+  </dialog>
+
+  <div id="avisos" class="avisos" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="../llaves.js?v=1"></script>
+  <script src="../acceso.js?v=1"></script>
+  <script>
+    (async function() {
+      try {
+        await window.AccesoApp.preparar();
+      } catch (error) {
+        var avisos = document.getElementById("avisos");
+        if (avisos) avisos.textContent = "No se pudo abrir el padrón: " + error.message;
+        return;
+      }
+      var lista = [
+        "vendor/xlsx.full.min.js",
+        "nucleo/texto.js",
+        "nucleo/almacen.js",
+        "nucleo/excel.js?v=2",
+        "nucleo/actualizacion.js",
+        "nucleo/integracion.js",
+        "app.js?v=10"
+      ];
+      for (var i = 0; i < lista.length; i++) {
+        await new Promise(function(resolver, rechazar) {
+          var script = document.createElement("script");
+          script.src = lista[i];
+          script.onload = resolver;
+          script.onerror = function() { rechazar(new Error("No se pudo cargar " + lista[i])); };
+          document.body.appendChild(script);
+        }).catch(function(error) {
+          var avisos = document.getElementById("avisos");
+          if (avisos) avisos.textContent = "No se pudo abrir el padrón: " + error.message;
+          throw error;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

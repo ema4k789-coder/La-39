@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mapa de alumnos EP 39</title>
+  <meta name="theme-color" content="#e07b1f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EP 39">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="iconos/icon-192.png">
+  <link rel="stylesheet" href="leaflet/leaflet.css">
+  <link rel="stylesheet" href="estilos.css?v=12">
+  <link rel="stylesheet" href="estilos-ios.css?v=1">
+  <link rel="stylesheet" href="estilos-acceso.css?v=1">
+  <script src="version.js?v=1"></script>
+  <script>window.MODO_LOCAL = true;</script>
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+    main { flex: 1 1 auto; min-height: 0; }
+    #panelPadron { flex: 1 1 auto; min-height: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>EP <span id="creditos39" class="creditos-39">39</span> <span id="appVersion" class="version-app" title="Versión de esta instalación"></span></h1><p id="yearLabel">Mapa de alumnos y padrón · integrado</p></div>
+    <div class="header-tabs">
+      <nav class="panel-tabs" aria-label="Paneles" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="panel-tab active" data-panel="mapa">Mapa alumnos</button>
+        <button type="button" class="panel-tab" data-panel="padron">Padrón</button>
+        <button type="button" class="panel-tab" data-panel="salidas">Salidas</button>
+      </nav>
+      <button id="salirApp" class="salir" type="button" title="Cerrar la aplicación">Salir</button>
+    </div>
+    <div class="top-actions" id="mapActions">
+      <button id="openUpdate" type="button">Actualización</button>
+      <div class="more-menu" id="moreMenu">
+        <button id="moreToggle" class="more-toggle" type="button" aria-expanded="false" aria-controls="morePanel" aria-haspopup="true">Más <span aria-hidden="true">▾</span></button>
+        <div id="morePanel" class="more-panel">
+          <a href="/api/exportar.xlsx" download id="exportExcel">Exportar Excel</a>
+          <a href="/api/exportar.geojson" download id="exportGeoJSON">Exportar GeoJSON</a>
+          <button id="openYear" type="button" title="Cambiar el año lectivo en curso o abrir un año nuevo">Año lectivo</button>
+          <button id="openPromotion" type="button" title="Promover todos los grupos al año siguiente">Promoción</button>
+          <button id="openMemory" type="button" title="Ver los alumnos que egresaron en años anteriores">Memoria</button>
+        </div>
+      </div>
+      <button id="openImport" class="primary" type="button">Importar Excel</button>
+    </div>
+  </header>
+  <main>
+    <section class="sidebar">
+      <div class="summary" id="summary">Cargando base...</div>
+      <section class="grade-stats" aria-label="Estadísticas por grado">
+        <div class="grade-stats-head"><strong>Estadísticas por grado</strong><span id="gradeStatsSummary"></span><button type="button" id="toggleStats" class="stats-toggle" aria-expanded="true" aria-controls="statsScroll">Ocultar</button></div>
+        <div class="stats-scroll" id="statsScroll">
+          <table>
+            <thead><tr><th>Curso</th><th>Total</th><th title="Ubicados en el mapa">Ubic.</th><th title="Pendientes de ubicar">Pend.</th><th title="Porcentaje ubicado">%</th></tr></thead>
+            <tbody id="gradeStatsBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <div class="filters" id="filters">
+        <input id="search" type="search" placeholder="Buscar alumno, DNI o domicilio" aria-label="Buscar alumnos">
+        <div class="filter-selects">
+          <select id="grade" aria-label="Filtrar grado"><option value="">Todos los grados</option></select>
+          <select id="location" aria-label="Filtrar ubicación">
+            <option value="">Todas las ubicaciones</option>
+            <option value="pending">Pendientes</option>
+            <option value="located">Con ubicación</option>
+          </select>
+        </div>
+        <div class="filter-status">
+          <span id="resultCount" role="status" aria-live="polite">Cargando alumnos…</span>
+          <div class="filter-status-actions">
+            <button type="button" id="clearFilters" class="clear-filters" hidden>Limpiar filtros</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="newStudent">+ Nuevo alumno</button>
+        <button id="autoLocate">Ubicar pendientes del grado</button>
+        <button id="exportGrade" title="Descargar un Excel con los alumnos del grado elegido en el filtro">Excel del grado</button>
+      </div>
+      <p class="hint">Para ubicar en lote, elegí un grado. Los puntos existentes se conservan.</p>
+      <div id="list" class="list" aria-label="Lista de alumnos"></div>
+    </section>
+    <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal" aria-label="Ajustar el espacio entre las opciones y el mapa" tabindex="0" title="Arrastrá para dar más espacio al mapa">
+      <span class="splitter-grip" aria-hidden="true"></span>
+    </div>
+    <section class="workspace">
+      <div class="map-header"><strong>Mapa de domicilios</strong><label class="base-toggle"><input type="checkbox" id="showBase" checked> Mostrar mapa base offline</label><label class="base-toggle" title="Líneas punteadas que continúan las calles existentes, paralelas y perpendiculares, para estimar las que faltan"><input type="checkbox" id="showGrid"> Grilla estimada</label><button id="fit">Ver puntos</button><button type="button" id="toggleView" class="view-toggle" aria-pressed="false">Ver lista</button></div>
+      <div id="mapInstructions" class="map-instructions" role="status" hidden></div>
+      <div id="mapLocationActions" class="map-location-actions" hidden>
+        <strong id="mapLocationState">Punto seleccionado: todavía no está guardado.</strong>
+        <div class="actions">
+          <button type="button" class="primary" id="mapSaveLocation">Guardar este punto</button>
+          <button type="button" id="mapChooseAgain">Elegir otro punto</button>
+          <button type="button" id="mapShowForm">Ver ficha</button>
+        </div>
+      </div>
+      <div id="filtroSalida" class="filtro-salida" hidden>
+        <span id="filtroSalidaTexto"></span>
+        <button type="button" id="quitarFiltroSalida">Quitar filtro</button>
+      </div>
+      <div id="map"></div>
+      <div class="notice">Acercá el mapa para ver los nombres y números de las calles. Los puntos automáticos son orientativos.</div>
+    </section>
+    <aside class="detail" id="detail">
+      <details id="duplicateWarning" class="duplicate-warning" hidden open>
+        <summary id="duplicateWarningTitle"></summary>
+        <div id="duplicateWarningList"></div>
+      </details>
+      <div id="detailContent">
+      <div class="detail-header"><div><h2>Ficha del alumno</h2><p id="detailStatus">Seleccioná un alumno o creá uno nuevo.</p></div></div>
+      <form id="form" hidden>
+        <label>Nombre y apellido<input name="nombre_persona" required></label>
+        <div class="row"><label>Número de alumno<input name="numero_alumno" inputmode="numeric"></label><label>Grado<select name="grado" required></select></label></div>
+        <label class="check-field"><input name="permanencia" type="checkbox"> Permanece en el mismo grado (no promueve)</label>
+        <div class="grade-move" id="gradeMove"><button type="button" id="moveGrade" disabled>Trasladar al grado seleccionado</button><span id="moveGradeHelp" class="hint">Seleccioná un alumno guardado para trasladarlo.</span></div>
+        <div class="row"><label>Fecha de nacimiento<input name="fecha_nacimiento" placeholder="dd/mm/aaaa"></label><label>DNI<input name="dni" inputmode="numeric"></label></div>
+        <p id="duplicateDni" class="hint" role="status" hidden></p>
+        <label>Domicilio<input name="direccion_texto" id="address"></label>
+        <div class="actions"><button type="button" id="searchAddress">Buscar domicilio</button><button type="button" id="pickMap">Ubicar manualmente en el mapa</button></div>
+        <p class="hint">Para ubicar manualmente: presioná el botón, hacé clic en el mapa y después guardá la ubicación.</p>
+        <button type="button" id="saveLocation" class="primary">Guardar ubicación manual</button>
+        <p id="locationHelp" class="hint" role="status" aria-live="polite">Primero elegí un punto en el mapa o ingresá latitud y longitud.</p>
+        <p class="hint">Al editar estas calles se actualiza el domicilio de la ficha. Para una intersección, dejá vacía la segunda entrecalle. Guardá la ficha para conservar los cambios.</p>
+        <div class="row streets"><label>Calle principal<input id="street"></label><label>Cruce / entrecalle 1<input id="cross1"></label></div>
+        <label>Entrecalle 2 (opcional)<input id="cross2"></label>
+        <div id="candidates" aria-live="polite"></div>
+        <div class="row"><label>Latitud<input id="lat" inputmode="decimal"></label><label>Longitud<input id="lng" inputmode="decimal"></label></div>
+        <label>Responsable<input name="referente_familiar"></label>
+        <div class="row"><label>Teléfono<input name="telefono_contacto_familia"></label><label>Nacionalidad responsable<input name="responsable_nacionalidad"></label></div>
+        <label>Actividad del responsable<input name="responsable_actividad"></label>
+        <label>Observaciones<textarea name="observaciones" rows="2"></textarea></label>
+        <button class="primary save" type="submit">Guardar ficha y ubicación</button>
+        <div class="delete-block">
+          <button type="button" id="deleteStudent" class="danger">Eliminar alumno</button>
+          <span class="hint">Borra la ficha y su ubicación. Antes se guarda un respaldo.</span>
+        </div>
+      </form>
+      </div>
+    </aside>
+  </main>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <section id="panelSalidas" class="panel-salidas" hidden>
+    <div class="salidas-layout">
+      <aside class="salidas-lista" aria-label="Salidas guardadas">
+        <div class="salidas-lista-head"><strong>Salidas educativas</strong><button type="button" id="nuevaSalida" class="primary">+ Nueva</button></div>
+        <p class="hint">Elegí una salida para revisarla o editarla. Queda guardada junto con los datos de la app.</p>
+        <div id="salidasItems" class="salidas-items" role="list"></div>
+      </aside>
+      <div class="salidas-editor">
+        <p class="salidas-vacio" id="salidaVacio">Creá una salida nueva o elegí una de la lista.</p>
+        <form id="salidaForm" hidden>
+          <div class="row">
+            <label class="salida-nombre">Nombre de la salida<input id="salidaNombre" maxlength="120" required placeholder="Ej.: Visita al museo"></label>
+            <label class="salida-fecha">Fecha<input id="salidaFecha" type="date"></label>
+          </div>
+          <label>Observaciones<textarea id="salidaNotas" rows="2" maxlength="1000" placeholder="Transporte, horario, autorizaciones…"></textarea></label>
+          <div class="salida-grados">
+            <strong>Grados incluidos</strong>
+            <div id="salidaGrados" class="salida-chips"></div>
+            <label class="salida-agregar">Agregar grado<select id="salidaAgregarGrado"><option value="">Elegí un grado…</option></select></label>
+          </div>
+          <div class="salida-tools">
+            <input id="salidaBuscar" type="search" placeholder="Buscar alumno, DNI o número" aria-label="Buscar alumnos de la salida">
+            <label class="check-field"><input type="checkbox" id="salidaSoloSel"> Solo seleccionados</label>
+          </div>
+          <p id="salidaResumen" class="hint" role="status" aria-live="polite"></p>
+          <div id="salidaAlumnos" class="salida-alumnos"></div>
+          <div class="actions salida-acciones">
+            <button type="submit" class="primary" id="salidaGuardar">Guardar salida</button>
+            <button type="button" id="salidaExportar">Excel con datos</button>
+            <button type="button" id="salidaExportarLista">Excel solo lista</button>
+            <button type="button" id="salidaVerMapa">Ver en el mapa</button>
+            <button type="button" id="salidaEliminar" class="danger" hidden>Eliminar salida</button>
+          </div>
+          <p id="salidaStatus" class="hint" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section id="panelPadron" hidden style="flex:1;min-height:0;display:none">
+    <iframe id="padronFrame" data-src="padron/index.html" title="Padrón EP 39" style="width:100%;height:100%;border:0;display:block;background:#fff"></iframe>
+  </section>
+  <footer id="status" role="status" aria-live="polite">Iniciando...</footer>
+  <script>
+    (function(){
+      var ver = document.getElementById('appVersion');
+      if(ver && window.VERSION_APP) ver.textContent = 'v' + window.VERSION_APP;
+      var esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var instalada = navigator.standalone === true ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if(esIOS && !instalada){
+        var mostrarAviso = false;
+        try { mostrarAviso = !localStorage.getItem('ep39-aviso-instalar'); } catch(error) { mostrarAviso = true; }
+        if(mostrarAviso){
+          var aviso = document.createElement('div');
+          aviso.className = 'instalar-aviso';
+          aviso.innerHTML = '<span>Para usarla como app: tocá <strong>Compartir</strong> y elegí <strong>Agregar a pantalla de inicio</strong>.</span>' +
+            '<button type="button" aria-label="Ocultar aviso">✕</button>';
+          aviso.querySelector('button').addEventListener('click', function(){
+            try { localStorage.setItem('ep39-aviso-instalar', '1'); } catch(error) {}
+            aviso.remove();
+          });
+          document.body.appendChild(aviso);
+        }
+      }
+      if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+        var habiaControl = !!navigator.serviceWorker.controller;
+        var recargando = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function(){
+          if(!habiaControl || recargando) return;
+          recargando = true;
+          location.reload();
+        });
+        window.addEventListener('load', function(){
+          navigator.serviceWorker.register('sw.js').then(function(registro){
+            if(registro.update) registro.update().catch(function(){});
+          }).catch(function(){});
+        });
+      }
+      if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+      var tabs = document.querySelectorAll('.panel-tab');
+      var main = document.querySelector('main');
+      var padron = document.getElementById('panelPadron');
+      var salidas = document.getElementById('panelSalidas');
+      var actions = document.getElementById('mapActions');
+      var footer = document.getElementById('status');
+      function recargarPadron(){
+        var frame = document.getElementById('padronFrame');
+        if(!frame || !frame.contentWindow) return;
+        try {
+          var ventana = frame.contentWindow;
+          if(ventana.PadronApp && ventana.PadronApp.recargarDesdeMapa) ventana.PadronApp.recargarDesdeMapa();
+          else if(ventana.IntegracionPadron) ventana.IntegracionPadron.refrescar();
+        } catch(error) {}
+      }
+      function show(panel){
+        var isPadron = panel === 'padron';
+        var isSalidas = panel === 'salidas';
+        var fueraDelMapa = isPadron || isSalidas;
+        if(main) main.style.display = fueraDelMapa ? 'none' : '';
+        if(padron){ padron.hidden = !isPadron; padron.style.display = isPadron ? 'flex' : 'none'; }
+        if(salidas){ salidas.hidden = !isSalidas; salidas.style.display = isSalidas ? 'flex' : 'none'; }
+        if(actions) actions.style.display = fueraDelMapa ? 'none' : '';
+        if(footer) footer.style.display = fueraDelMapa ? 'none' : '';
+        tabs.forEach(function(t){
+          var on = t.getAttribute('data-panel') === panel;
+          t.classList.toggle('active', on);
+        });
+        if(isPadron){
+          recargarPadron();
+        } else if(isSalidas){
+          if(window.SalidasApp && window.SalidasApp.alMostrar) window.SalidasApp.alMostrar();
+        } else if(window.MapaApp && window.MapaApp.alMostrar){
+          window.MapaApp.alMostrar();
+        }
+      }
+      tabs.forEach(function(t){ t.addEventListener('click', function(){ show(t.getAttribute('data-panel')); }); });
+      window.CambiarPanel = show;
+    })();
+  </script>
+  <dialog id="creditosDialog" class="dialogo-creditos" aria-labelledby="creditosNombre">
+    <span class="creditos-escudo" aria-hidden="true">39</span>
+    <p class="creditos-etiqueta">Creado por</p>
+    <h2 id="creditosNombre" class="creditos-nombre">Emanuel Alvarez</h2>
+    <p class="creditos-pie">Tocá para cerrar</p>
+  </dialog>
+  <dialog id="studentDialog" aria-label="Ficha del alumno">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="dialog-head"><strong>Datos del alumno</strong><button id="closeStudentDialog" type="button" aria-label="Cerrar ficha">✕</button></div>
+    <div id="studentDialogContent"></div>
+    <p id="studentDialogStatus" role="status" aria-live="polite"></p>
+  </dialog>
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog-head"><h2>Importar alumnos desde Excel</h2><button value="cancel" aria-label="Cerrar">✕</button></form>
+    <p>Seleccioná el grado y el archivo. Vas a revisar las columnas antes de importar.</p>
+    <p id="importYearNote" class="hint">Solo se importan alumnos del año lectivo en curso; la Memoria de años anteriores no se modifica.</p>
+    <p class="hint">Los alumnos del grado que ya tienen ubicación se conservan. Si querés reemplazarlos, se pregunta antes de importar.</p>
+    <div class="row"><label>Grado<select id="importGrade"></select></label><label>Archivo .xlsx<input id="excel" type="file" accept=".xlsx"></label></div>
+    <div class="row"><label>Hoja<select id="sheet"><option value="">Primera hoja</option></select></label><label>Fila de encabezados<input id="headerRow" type="number" min="1" value="1"></label></div>
+    <button id="inspect">Examinar columnas</button>
+    <div id="mappingArea" hidden>
+      <label>Incluir hasta la fila física<input id="lastRow" type="number" min="2"></label>
+      <div id="mapping" class="mapping"></div>
+      <p id="studentCount" class="hint" role="status" aria-live="polite">La fila de encabezados nunca se importa. Asigná la columna de nombre para contar alumnos.</p>
+      <p class="hint">La fila indicada es la posición física en Excel, no la cantidad de alumnos. Nombre y domicilio son obligatorios.</p>
+      <button id="import" class="primary">Importar y ubicar</button>
+    </div>
+    <p id="importStatus" role="status"></p>
+  </dialog>
+  <dialog id="updateDialog">
+    <form method="dialog" class="dialog-head"><h2>Actualización de datos</h2><button value="cancel" aria-label="Cerrar">✕</button></form>
+    <p>Exportá todos los datos para pasárselos a otra persona, o cargá un archivo de actualización recibido. Podés reemplazar los datos o fusionarlos con los que ya tenés.</p>
+    <p id="updateYearNote" class="hint">La exportación incluye el año lectivo en curso y la memoria de todos los ciclos lectivos guardados. "Fusionar" permite combinar archivos.</p>
+    <div class="update-block">
+      <h3>Exportar todos los datos</h3>
+      <p class="hint">Un solo archivo .json con alumnos, fichas, ubicaciones y memoria de todos los ciclos lectivos.</p>
+      <button id="exportUpdate" class="primary">Exportar archivo de actualización</button>
+    </div>
+    <div class="update-block">
+      <h3>Cargar un archivo de actualización</h3>
+      <label>Archivo .json<input id="updateFile" type="file" accept=".json,application/json"></label>
+      <p id="updateInfo" class="hint" role="status">Elegí el archivo que te enviaron.</p>
+      <div class="actions">
+        <button id="mergeUpdate" class="primary" disabled>Fusionar con los datos actuales</button>
+        <button id="applyUpdate" disabled>Reemplazar datos actuales</button>
+      </div>
+    </div>
+    <p class="hint">Fusionar suma/actualiza alumnos y memorias por ciclo lectivo sin borrar lo que no esté en el archivo. Reemplazar deja los datos como en el archivo (si el archivo no incluye memoria, se conserva la memoria existente). En ambos casos se guarda un respaldo automático.</p>
+    <p id="updateStatus" role="status"></p>
+  </dialog>
+  <dialog id="yearDialog">
+    <form method="dialog" class="dialog-head"><h2>Año lectivo</h2><button value="cancel" aria-label="Cerrar">✕</button></form>
+    <p>Establecé el año lectivo en curso. Al abrir un año nuevo, los grados se mantienen hasta que apliques la Promoción.</p>
+    <div class="row year-row"><label>Año en curso<input id="yearValue" type="number" min="2000" max="2100" inputmode="numeric"></label><button type="button" id="saveYear" class="primary">Guardar año</button></div>
+    <p id="yearCurrent" class="hint" role="status"></p>
+    <div class="update-block">
+      <h3>Abrir un año nuevo</h3>
+      <p id="yearNextInfo" class="hint"></p>
+      <button type="button" id="openNextYear">Abrir año nuevo</button>
+    </div>
+    <p class="hint">La Promoción pasa los grupos al año siguiente y archiva a los egresados de 6.° en la Memoria del año que corresponde. Si abrís el año nuevo primero, después promocioná para archivar ese año.</p>
+    <p id="yearStatus" role="status"></p>
+  </dialog>
+  <dialog id="promotionDialog">
+    <form method="dialog" class="dialog-head"><h2>Promoción de grupos</h2><button value="cancel" aria-label="Cerrar">✕</button></form>
+    <p>Al comenzar un nuevo año, todos los alumnos pasan al grado siguiente. Los alumnos con la opción <strong>Permanece en el mismo grado</strong> marcada en su ficha no cambian de grado.</p>
+    <div id="promotionSummary"></div>
+    <p class="hint">Los grupos de 6.° sin permanencia egresan y quedan en la Memoria de años anteriores. Los grupos de 1.° quedan vacíos para los nuevos ingresos.</p>
+    <p id="promotionStatus" role="status"></p>
+    <div class="actions"><button type="button" id="applyPromotion" class="primary">Promover grupos</button></div>
+  </dialog>
+  <dialog id="memoryDialog">
+    <form method="dialog" class="dialog-head"><h2>Memoria de años anteriores</h2><button value="cancel" aria-label="Cerrar">✕</button></form>
+    <div class="row"><label>Año<select id="memoryYear"></select></label></div>
+    <p id="memoryInfo" class="hint" role="status">Cargando...</p>
+    <div id="memoryTable" class="memory-table"></div>
+    <p class="hint">Aquí quedan los alumnos de 6.° que egresaron al promocionar los grupos. Se conservan sus datos y su ubicación.</p>
+  </dialog>
+  <dialog id="locatedDialog">
+    <div class="dialog-head"><h2>Alumnos ya ubicados</h2><button type="button" value="cancel" aria-label="Cerrar">✕</button></div>
+    <p id="locatedText"></p>
+    <p class="hint">Conservar deja intactos a los alumnos que ya tienen un punto. Sobrescribir reemplaza todo el grado y vuelve a ubicar desde cero.</p>
+    <div class="actions">
+      <button type="button" value="keep" class="primary">Conservar ubicados e importar</button>
+      <button type="button" value="overwrite">Sobrescribir todo</button>
+    </div>
+  </dialog>
+  <script src="leaflet/leaflet.js"></script>
+  <script src="nucleo/arranque.js?v=9"></script>
+</body>
+</html>

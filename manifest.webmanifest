@@ -1,0 +1,19 @@
+{
+  "name": "EP 39",
+  "short_name": "EP 39",
+  "description": "Mapa de alumnos, padrón y salidas educativas de la EP 39, sin conexión.",
+  "lang": "es-AR",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e07b1f",
+  "theme_color": "#e07b1f",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "iconos/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}

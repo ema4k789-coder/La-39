@@ -1,0 +1,240 @@
+/* Estilo iPhone: solo aspecto. No cambia estructura, navegación ni lógica. */
+:root{
+  --ios-fondo:#f2f2f7;
+  --ios-tarjeta:#ffffff;
+  --ios-texto:#1c1c1e;
+  --ios-secundario:#5f5f66;
+  --ios-separador:rgba(60,60,67,.16);
+  --ios-naranja:#e07b1f;
+  --ios-naranja-oscuro:#b85c0d;
+  --ios-tinta:#1c1206;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,sans-serif;
+  background:var(--ios-fondo);
+  color:var(--ios-texto);
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+header{
+  background:rgba(224,123,31,.92);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  backdrop-filter:saturate(180%) blur(18px);
+  color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  border-bottom:1px solid rgba(0,0,0,.10);
+  position:sticky;
+  top:0;
+  z-index:1200;
+}
+header h1{font-weight:800;letter-spacing:-.02em}
+header p{color:rgba(255,255,255,.92);font-weight:500}
+.version-app{
+  background:#fff;
+  color:var(--ios-tinta);
+  border-radius:999px;
+  font-weight:700;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.panel-tabs{background:transparent;padding:0;gap:8px}
+.panel-tab{
+  background:#fff;
+  color:var(--ios-tinta);
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:999px;
+  font-weight:650;
+  padding:8px 14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.12);
+  transition:background .15s,color .15s,transform .1s;
+}
+.panel-tab:active{transform:scale(.97)}
+.panel-tab.active{
+  background:var(--ios-tinta);
+  color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.28);
+}
+#salirApp{display:none}
+.top-actions button,.top-actions a{
+  background:rgba(255,255,255,.95);
+  color:var(--ios-tinta);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:11px;
+  font-weight:650;
+  box-shadow:0 1px 2px rgba(0,0,0,.10);
+}
+.top-actions .primary{background:var(--ios-tinta);color:#fff;border-color:var(--ios-tinta)}
+.more-panel{
+  background:rgba(255,255,255,.97);
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+  border:1px solid var(--ios-separador);
+  border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,.22);
+  overflow:hidden;
+}
+.more-panel button,.more-panel a{border-radius:0;border:0;border-bottom:1px solid var(--ios-separador);background:transparent;box-shadow:none}
+main{background:var(--ios-fondo)}
+.sidebar,.detail{background:var(--ios-fondo);border:0}
+.detail{border-top:1px solid var(--ios-separador)!important}
+.summary{font-weight:700;color:var(--ios-texto)}
+.grade-stats{
+  background:var(--ios-tarjeta);
+  border:1px solid var(--ios-separador);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+.grade-stats-head{background:transparent;color:var(--ios-texto);border-bottom:1px solid var(--ios-separador)}
+.grade-stats-head span{color:var(--ios-secundario)}
+.filters input,.filters select,.salida-tools input{border-radius:11px}
+.item{
+  background:var(--ios-tarjeta);
+  border:1px solid var(--ios-separador);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+  padding:12px 14px;
+}
+.item:active{background:#f6f6f8}
+.item.selected{
+  border-color:var(--ios-naranja);
+  background:#fff8f0;
+  box-shadow:inset 0 0 0 2px var(--ios-naranja);
+}
+.item span{color:var(--ios-secundario)}
+input,select,textarea{
+  border:1px solid #c9c9cf;
+  border-radius:11px;
+  background:#fff;
+  color:var(--ios-texto);
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--ios-naranja);
+  outline:3px solid rgba(224,123,31,.30);
+  outline-offset:0;
+}
+button{transition:transform .1s,opacity .15s}
+button:active:not(:disabled){opacity:.72}
+.workspace{background:var(--ios-fondo)}
+.map-header{
+  background:rgba(255,255,255,.94);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--ios-separador);
+  gap:10px;
+}
+.map-header strong{font-weight:700}
+.base-toggle{font-weight:500;color:var(--ios-secundario)}
+.view-toggle{
+  background:var(--ios-tinta)!important;
+  color:#fff!important;
+  border:0!important;
+  border-radius:999px!important;
+  font-weight:700;
+  padding:10px 16px;
+}
+#map{
+  border:1px solid var(--ios-separador);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+.notice{background:rgba(255,255,255,.9);border-top:1px solid var(--ios-separador);color:var(--ios-secundario)}
+.filtro-salida{
+  background:#fff8f0;
+  border-bottom:1px solid var(--ios-separador);
+  border-radius:0;
+  color:var(--ios-tinta);
+}
+.filtro-salida button{border-radius:999px;background:#fff;border:1px solid var(--ios-separador)}
+footer{
+  background:rgba(242,242,247,.94);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--ios-separador);
+  color:var(--ios-secundario);
+}
+.toasts{right:12px;left:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom))}
+.toast{
+  border:0;
+  border-radius:16px;
+  background:rgba(28,28,30,.94);
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+  box-shadow:0 12px 32px rgba(0,0,0,.30);
+  font-size:14px;
+  padding:12px 12px 12px 14px;
+}
+.toast.success{background:rgba(20,83,45,.95)}
+.toast.error{background:rgba(122,20,20,.95)}
+dialog{
+  border:0;
+  border-radius:18px;
+  box-shadow:0 24px 70px rgba(0,0,0,.35);
+  background:#fbfbfd;
+}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dialog-head{background:transparent;border-bottom:1px solid var(--ios-separador)}
+.dialogo-creditos{border:0;border-radius:20px;background:#fff7ee}
+/* Salidas educativas */
+.panel-salidas{background:var(--ios-fondo)}
+.salidas-lista{background:var(--ios-fondo);border-right:0;border-bottom:1px solid var(--ios-separador)}
+.salidas-editor{background:var(--ios-fondo)}
+.salida-item{
+  background:var(--ios-tarjeta);
+  border:1px solid var(--ios-separador);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+.salida-item.selected{
+  border-color:var(--ios-naranja);
+  background:#fff8f0;
+  box-shadow:inset 0 0 0 2px var(--ios-naranja);
+}
+.salida-item span{color:var(--ios-secundario)}
+.salida-grados{background:#fff8f0;border:1px solid var(--ios-separador);border-radius:14px}
+.salida-chip{background:#ffe1bf;border:1px solid #e7b483;color:var(--ios-tinta);border-radius:999px}
+.salida-alumnos{background:var(--ios-tarjeta);border:1px solid var(--ios-separador);border-radius:14px}
+.salida-fila{background:#fff;border:1px solid var(--ios-separador);border-radius:11px}
+.salida-fila.fuera{background:#fff8f0;border-style:dashed}
+.salida-fila-texto span{color:var(--ios-secundario)}
+.danger{background:#b3261e;border-color:#b3261e;border-radius:11px}
+/* Aviso para instalar en iPhone */
+.instalar-aviso{
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  z-index:4000;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(28,28,30,.94);
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+  color:#fff;
+  font-size:14px;
+  line-height:1.35;
+  box-shadow:0 12px 32px rgba(0,0,0,.35);
+}
+.instalar-aviso strong{color:#ffd9b0;font-weight:700}
+.instalar-aviso button{
+  flex:none;
+  min-height:34px;
+  min-width:34px;
+  padding:0;
+  border:0;
+  border-radius:999px;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  font-size:14px;
+}
+/* En el teléfono: campos de 16px para que Safari no haga zoom al escribir. */
+@media(max-width:650px){
+  input,select,textarea{font-size:16px}
+  header{gap:10px}
+  .sidebar,.detail{padding:12px}
+  .toasts{bottom:calc(12px + env(safe-area-inset-bottom))}
+}
