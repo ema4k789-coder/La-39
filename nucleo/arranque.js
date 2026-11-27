@@ -177,7 +177,7 @@
     };
     await cargar("app.js?v=18");
     await cargar("salidas.js?v=1");
-    await cargar("revision.js?v=1");
+    await cargar("revision.js?v=2");
   }
 
   (local ? arrancarLocal() : arrancarServidor()).catch(error =>

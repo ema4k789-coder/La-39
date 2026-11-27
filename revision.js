@@ -238,13 +238,17 @@
     const [curso, division] = String(grado).split("-");
     if (entry.tipo !== "faltante" && String(item.curso) === curso &&
         String(item.division || "").toUpperCase() === division) {
+      const texto = "Elegí un grado distinto al actual para mover al alumno.";
       estado.className = "revision-estado error";
-      estado.textContent = "Elegí un grado distinto al actual para mover al alumno.";
+      estado.textContent = texto;
+      mensaje(texto, "error");
       return;
     }
     if (entry.tipo === "faltante" && !String((item.campos || {}).nombre_persona || "").trim()) {
+      const texto = "Falta el nombre del alumno: no se puede agregar desde acá.";
       estado.className = "revision-estado error";
-      estado.textContent = "Falta el nombre del alumno: no se puede agregar desde acá.";
+      estado.textContent = texto;
+      mensaje(texto, "error");
       return;
     }
     const revision = await revisionActual();

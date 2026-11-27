@@ -2,10 +2,11 @@
 // Service worker de la app EP 39 (PWA): guarda toda la aplicación para que abra
 // sin internet. Al cambiar la versión en version.js se descarta la caché vieja.
 // Actualización 2.7.2: base con los 780 alumnos de la app del teléfono (26/11/2026)
-// y lista cifrada de cambios para la sección Revisión.
+// y lista cifrada de cambios para la sección Revisión. La r2 fuerza a renovar la
+// caché publicada al corregir los avisos de Revisión sin cambiar la versión.
 importScripts("./version.js?v=3");
 
-const CACHE = "ep39-" + self.VERSION_APP;
+const CACHE = "ep39-" + self.VERSION_APP + "-r2";
 const ARCHIVOS = [
   "./index.html",
   "./estilos.css",
