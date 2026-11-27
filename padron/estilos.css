@@ -1177,3 +1177,43 @@ dialog::backdrop {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Acciones por fila en el padron */
+.fila-alumno { display: flex; align-items: stretch; border-bottom: 1px solid #f1eae1; }
+.lista li:last-child.fila-alumno { border-bottom: 0; }
+.fila-alumno .fila-boton { flex: 1; min-width: 0; border-bottom: 0; }
+.lista li:last-child .fila-boton { border-bottom: 0; }
+.fila-boton:hover { background: var(--superficie-2); }
+.fila-boton:focus-visible { outline: none; box-shadow: inset var(--foco); }
+.fila-boton.destacado { animation: destacar 1.6s ease-out; }
+
+.fila-acciones { display: flex; align-items: center; gap: 6px; padding: 0 14px 0 0; }
+.fila-accion {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--linea);
+  border-radius: 9px;
+  background: var(--superficie);
+  color: var(--tinta);
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.fila-accion svg { width: 18px; height: 18px; fill: currentColor; pointer-events: none; }
+.fila-accion:hover { background: var(--superficie-2); }
+.fila-accion:focus-visible { outline: none; box-shadow: var(--foco); }
+.fila-accion.peligro { color: var(--peligro); border-color: #dcb7b7; }
+.fila-accion.peligro:hover { background: var(--peligro-suave); }
+.fila-accion.confirmar,
+.fila-accion.confirmar:hover { background: var(--peligro); border-color: var(--peligro); color: #fff; }
+@media (max-width: 650px) {
+  .fila-acciones { gap: 6px; padding: 0 10px 0 0; }
+  .fila-accion { width: 44px; height: 44px; }
+}
+@media (max-width: 380px) {
+  .fila-acciones { flex-direction: column; justify-content: center;
+    gap: 6px; padding: 8px 8px 8px 0; }
+}

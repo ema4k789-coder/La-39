@@ -223,5 +223,68 @@ input:focus,select:focus,textarea:focus{border-color:#1c1206;outline-color:#1c12
   .salidas-editor{padding:10px 12px}
   .salida-alumnos{max-height:none}
 }
+/* Revisión: cambios de la base fuera del mapa y del padrón. */
+.revision-contenedor{display:grid;gap:12px;width:min(880px,100%);margin:0 auto;padding:14px 12px 28px}
+.revision-cabecera{padding:14px 16px;border:1px solid #b8b2aa;border-radius:14px;background:#fff}
+.revision-cabecera h2{margin:0 0 4px;font-size:18px;line-height:1.25}
+.revision-cabecera p{margin:0;color:#475569;font-size:13px;line-height:1.45}
+.revision-resumen{display:grid;gap:10px;margin-top:12px}
+.revision-resumen p{margin:0}
+.revision-resumen-fuente{margin:0;color:#475569;font-size:12.5px}
+.revision-filtros{display:flex;flex-wrap:wrap;gap:6px}
+.revision-filtro{min-height:38px;padding:6px 12px;border:1px solid #6b6b6b;border-radius:999px;background:#fff;color:#1c1206;font-size:12.5px;font-weight:700}
+.revision-filtro[aria-pressed="true"]{background:#1c1206;border-color:#1c1206;color:#fff}
+.revision-lista{display:grid;gap:10px}
+.revision-vacio{margin:0;padding:14px;border:1px dashed #6b6b6b;border-radius:12px;background:#f8fafc;color:#334155;font-size:13.5px;line-height:1.45}
+.revision-item{display:grid;gap:9px;padding:12px 14px;border:1px solid #b8b2aa;border-left:6px solid #475569;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.revision-item[data-tipo="agregado"]{border-left-color:#166534}
+.revision-item[data-tipo="editado"]{border-left-color:#92400e}
+.revision-item[data-tipo="faltante"]{border-left-color:#991b1b}
+.revision-item.revision-hecho{background:#f8fafc;opacity:.82}
+.revision-item-cabecera{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 8px}
+.revision-tipo{padding:2px 9px;border-radius:999px;color:#fff;font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.revision-tipo-agregado{background:#166534}
+.revision-tipo-editado{background:#92400e}
+.revision-tipo-faltante{background:#991b1b}
+.revision-nombre{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.revision-grado{padding:2px 9px;border:1px solid #b8b2aa;border-radius:999px;background:#f1f5f9;color:#1e293b;font-size:12px;font-weight:700}
+.revision-detalle{display:grid;gap:3px;margin:0}
+.revision-detalle div{display:flex;gap:6px;font-size:13px;line-height:1.4}
+.revision-detalle dt{flex:none;min-width:76px;color:#475569;font-weight:700}
+.revision-detalle dd{margin:0;overflow-wrap:anywhere}
+.revision-cambios{display:grid;gap:3px;margin:0;padding:8px 0 0;border-top:1px dashed #cbd5e1;list-style:none;font-size:13px;line-height:1.4}
+.revision-cambios li{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:baseline}
+.revision-cambios .revision-campo{color:#475569;font-weight:700}
+.revision-cambios .revision-antes{color:#991b1b;text-decoration:line-through;overflow-wrap:anywhere}
+.revision-cambios .revision-flecha{color:#475569}
+.revision-cambios .revision-despues{color:#166534;font-weight:700;overflow-wrap:anywhere}
+.revision-acciones{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
+.revision-acciones label{display:grid;gap:3px;color:#475569;font-size:11.5px;font-weight:700}
+.revision-grado-select{min-width:116px;min-height:40px;padding:6px 8px;border:1px solid #6b6b6b;border-radius:10px;background:#fff;color:#1c1206;font-size:13.5px}
+.revision-boton{min-height:40px;padding:8px 14px;border:1px solid #6b6b6b;border-radius:10px;background:#fff;color:#1c1206;font-size:13px;font-weight:800}
+.revision-boton.primary{background:#1c1206;border-color:#1c1206;color:#fff}
+.revision-boton.danger{background:#fff;border-color:#991b1b;color:#991b1b}
+.revision-boton:disabled{opacity:.5}
+.revision-estado{margin:0;color:#475569;font-size:12.5px;line-height:1.4}
+.revision-estado.error{color:#991b1b;font-weight:700}
+.revision-estado.ok{color:#166534;font-weight:700}
+.revision-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:5px;padding:0 6px;border-radius:999px;background:#991b1b;color:#fff;font-size:11.5px;font-weight:800;vertical-align:middle}
+.revision-badge[hidden]{display:none}
+@media(max-width:650px){
+  .revision-contenedor{padding:10px 8px calc(24px + env(safe-area-inset-bottom))}
+  .revision-detalle dt{min-width:64px}
+  .revision-acciones .revision-grado-select{flex:1 1 120px}
+}
 /* Versión visible en la cabecera: misma cifra que versionName del APK. */
 .version-app{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#fff;color:#1c1206;font-size:12px;font-weight:800;vertical-align:middle;letter-spacing:.2px}
+
+/* Acciones por fila: lapiz para editar y papelera para eliminar */
+.item-row{display:flex;align-items:stretch;gap:6px}
+.item-row .item{flex:1;min-width:0}
+.item-actions{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.item-action{display:flex;align-items:center;justify-content:center;width:40px;min-width:40px;padding:0;border-radius:7px;background:#fff;color:#111;touch-action:manipulation}
+.item-action svg{width:18px;height:18px;fill:currentColor;pointer-events:none}
+.item-action:hover{background:#f2f2f2}
+.item-action.peligro{color:#8f1d1d;border-color:#a33}
+.item-action.peligro:hover{background:#fdecec}
+@media(max-width:650px){.item-actions{flex-direction:row;align-items:center}.item-action{width:44px;min-width:44px;min-height:44px}}

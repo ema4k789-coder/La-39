@@ -3,7 +3,7 @@
 window.LLAVES_EP39 = {
   "version": 1,
   "generacion": "20261126-6178",
-  "datosId": "a0693c202d951148",
+  "datosId": "8944daab4b9c70a6",
   "kdf": {
     "token": {
       "iteraciones": 210000,
@@ -16,13 +16,18 @@ window.LLAVES_EP39 = {
   "archivos": {
     "datos-iniciales": {
       "ruta": "datos-cifrados/datos-iniciales.bin",
-      "iv": "UI4S9bzFCdKxCLk2",
+      "iv": "a46nMPu7FCphAi63",
       "global": "DATOS_INICIALES"
     },
     "padron-inicial": {
       "ruta": "datos-cifrados/padron-inicial.bin",
-      "iv": "5WHdUd8vgdg13Q1x",
+      "iv": "iqCkDVqk62q5vwSc",
       "global": "PADRON_INICIAL"
+    },
+    "revision-inicial": {
+      "ruta": "datos-cifrados/revision-inicial.bin",
+      "iv": "uac/W2Qb71/97hfF",
+      "global": "REVISION_EP39"
     }
   },
   "invitaciones": [

@@ -24,6 +24,8 @@
   let alumnoEditando = null;
   let armadoEliminar = false;
   let temporizadorEliminar = null;
+  let filaArmada = null;
+  let temporizadorFila = null;
   let armadoRestaurar = false;
   let temporizadorRestaurar = null;
   let copiaPendiente = null;
@@ -291,8 +293,21 @@
     renderResumen(lista.length);
   }
 
+  const ICONO_EDITAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+  const ICONO_ELIMINAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+  function botonFila(accion, icono, etiqueta, peligro) {
+    const boton = crear("button", "fila-accion" + (peligro ? " peligro" : ""));
+    boton.type = "button";
+    boton.dataset.accion = accion;
+    boton.title = etiqueta;
+    boton.setAttribute("aria-label", etiqueta);
+    boton.innerHTML = icono;
+    return boton;
+  }
+
   function filaAlumno(alumno) {
-    const item = crear("li");
+    const item = crear("li", "fila-alumno");
     const boton = crear("button", "fila-boton");
     boton.type = "button";
     boton.dataset.id = alumno.id;
@@ -317,7 +332,16 @@
     chevron.setAttribute("aria-hidden", "true");
 
     boton.append(avatar, caja, curso, chevron);
-    item.appendChild(boton);
+
+    const acciones = crear("span", "fila-acciones");
+    const editar = botonFila("editar", ICONO_EDITAR, "Editar a " + alumno.nombre);
+    const eliminar = botonFila("eliminar", ICONO_ELIMINAR, "Eliminar a " + alumno.nombre, true);
+    editar.dataset.id = alumno.id;
+    eliminar.dataset.id = alumno.id;
+    eliminar.dataset.nombre = alumno.nombre;
+    acciones.append(editar, eliminar);
+
+    item.append(boton, acciones);
     return item;
   }
 
@@ -886,6 +910,48 @@
     cerrarFicha();
     refrescarTodo();
     aviso("Se eliminó a " + eliminado.nombre + ".", "exito");
+  }
+
+  function cancelarEliminarFila() {
+    clearTimeout(temporizadorFila);
+    if (!filaArmada) return;
+    const boton = $("listaAlumnos").querySelector('.fila-accion[data-accion="eliminar"][data-id="' + CSS.escape(filaArmada) + '"]');
+    if (boton) {
+      boton.classList.remove("confirmar");
+      boton.title = "Eliminar a " + (boton.dataset.nombre || "alumno");
+      boton.setAttribute("aria-label", boton.title);
+    }
+    filaArmada = null;
+  }
+
+  function eliminarDesdeLista(id, boton) {
+    const alumno = datos.alumnos.find(item => item.id === id);
+    if (!alumno) return;
+    if (filaArmada !== id) {
+      cancelarEliminarFila();
+      filaArmada = id;
+      boton.classList.add("confirmar");
+      boton.title = "Tocá de nuevo para eliminar";
+      boton.setAttribute("aria-label", "Tocá de nuevo para eliminar a " + alumno.nombre);
+      temporizadorFila = setTimeout(cancelarEliminarFila, 5000);
+      aviso("Tocá de nuevo la papelera para eliminar a " + alumno.nombre + ".", "error");
+      return;
+    }
+    cancelarEliminarFila();
+    const anteriores = datos.alumnos;
+    datos.alumnos = anteriores.filter(item => item.id !== id);
+    if (!guardarCambios()) {
+      datos.alumnos = anteriores;
+      aviso("No se pudo eliminar en este dispositivo.", "error");
+      return;
+    }
+    sincronizarCambios();
+    if (alumnoEditando && alumnoEditando.id === id) {
+      alumnoEditando = null;
+      cerrarFicha();
+    }
+    refrescarTodo();
+    aviso("Se eliminó a " + alumno.nombre + ".", "exito");
   }
 
   function limpiarFiltros() {
@@ -1676,6 +1742,12 @@
     });
 
     $("listaAlumnos").addEventListener("click", evento => {
+      const accion = evento.target.closest(".fila-accion");
+      if (accion) {
+        if (accion.dataset.accion === "editar") abrirFicha(accion.dataset.id);
+        else eliminarDesdeLista(accion.dataset.id, accion);
+        return;
+      }
       const boton = evento.target.closest(".fila-boton");
       if (boton) abrirFicha(boton.dataset.id);
     });

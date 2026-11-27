@@ -18,7 +18,7 @@
     ["División", "division"], ["Domicilio", "direccion_texto"], ["Responsable", "referente_familiar"],
     ["Nacionalidad responsable", "responsable_nacionalidad"],
     ["Actividad responsable", "responsable_actividad"], ["Teléfono", "telefono_contacto_familia"],
-    ["Observaciones", "observaciones"], ["Referencia", "ubicacion_referencia"]];
+    ["Observaciones", "observaciones"]];
 
   function nuevoId() {
     if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, "");
@@ -121,35 +121,9 @@
     return "salida-" + (limpio || "salida") + (sufijo || "") + ".xlsx";
   }
 
-  function prepararActualizacion(texto, anioActual) {
-    if (typeof texto !== "string" || !texto.trim()) {
-      throw new Error("El archivo de actualización está vacío.");
-    }
-    if (texto.length > 80 * 1024 * 1024) {
-      throw new Error("El archivo de actualización es demasiado grande.");
-    }
-    let contenido;
-    try {
-      contenido = JSON.parse(texto);
-    } catch {
-      throw new Error("El archivo de actualización no es un JSON válido.");
-    }
-    if (contenido && contenido.anio !== undefined && anioActual !== undefined) {
-      const anioPaquete = contenido.anio;
-      if (typeof anioPaquete === "boolean" || !Number.isInteger(anioPaquete)) {
-        throw new Error("El archivo de actualización tiene un año lectivo inválido.");
-      }
-      if (anioPaquete !== anioActual) {
-        throw new Error("El archivo de actualización pertenece al año " + anioPaquete +
-          " y el año en curso es " + anioActual + ". No se cargó para no mezclar datos.");
-      }
-    }
-    const datos = contenido && contenido.formato === "actualizacion-datos" ? contenido.datos : contenido;
-    if (!datos || datos.type !== "FeatureCollection" || !Array.isArray(datos.features)) {
-      throw new Error("El archivo no tiene una colección de alumnos válida.");
-    }
-    const features = [], identificadores = new Set();
-    for (const feature of datos.features) {
+  function normalizarFeatures(features) {
+    const limpias = [], identificadores = new Set();
+    for (const feature of features) {
       if (!feature || typeof feature !== "object" || Array.isArray(feature) ||
           !feature.properties || typeof feature.properties !== "object" ||
           Array.isArray(feature.properties)) {
@@ -172,13 +146,157 @@
         }
         identificadores.add(identificador);
       }
-      features.push(copia);
+      limpias.push(copia);
     }
+    return limpias;
+  }
+
+  function fusionarProps(existente, entrante) {
+    const props = { ...(existente.properties || {}) };
+    for (const [clave, valor] of Object.entries(entrante.properties || {})) {
+      if (valor === null || valor === undefined) continue;
+      if (typeof valor === "string" && valor.trim() === "") continue;
+      props[clave] = valor;
+    }
+    return props;
+  }
+
+  function fusionarFeature(existente, entrante) {
+    let geometry = existente.geometry || entrante.geometry || null;
+    if (existente.geometry && !entrante.geometry) geometry = existente.geometry;
+    else if (entrante.geometry) geometry = entrante.geometry;
+    return { ...existente, ...entrante, type: "Feature",
+      properties: fusionarProps(existente, entrante), geometry };
+  }
+
+  function fusionarActivos(actuales, entrantes, anioActual, anioArchivo) {
+    const mismoAnio = anioArchivo === null || anioArchivo === undefined ||
+      !anioActual || anioArchivo === anioActual;
+    if (!mismoAnio) return { features: actuales, agregados: 0, actualizados: 0 };
+    const indice = new Map(), orden = [];
+    actuales.forEach((feature, posicion) => {
+      const identificador = String((feature.properties || {}).persona_id || "");
+      const clave = identificador || ("__indice__" + posicion);
+      indice.set(clave, feature);
+      orden.push(clave);
+    });
+    let agregados = 0, actualizados = 0;
+    for (const entrante of entrantes) {
+      const identificador = String((entrante.properties || {}).persona_id || "");
+      if (identificador && indice.has(identificador)) {
+        indice.set(identificador, fusionarFeature(indice.get(identificador), entrante));
+        actualizados += 1;
+      } else {
+        const clave = identificador || ("__nueva__" + nuevoId());
+        indice.set(clave, entrante);
+        orden.push(clave);
+        agregados += 1;
+      }
+    }
+    return { features: orden.map(clave => indice.get(clave)), agregados, actualizados };
+  }
+
+  function registroDeFeature(feature, anio, momento) {
+    const props = feature.properties || {};
+    const geometry = feature.geometry || {}, coords = geometry.coordinates;
+    const ubicado = geometry.type === "Point" && Array.isArray(coords) && coords.length === 2;
+    return { anio, persona_id: String(props.persona_id || ""),
+      nombre: String(props.nombre_persona || ""), grado: etiquetaGrado(feature),
+      dni: String(props.dni || ""), direccion: String(props.direccion_texto || ""),
+      telefono: String(props.telefono_contacto_familia || ""), ubicado,
+      contenido: feature, promovido_en: momento };
+  }
+
+  function fusionarMemoria(actuales, items) {
+    const registros = (actuales || []).slice(), indice = new Map();
+    registros.forEach((registro, posicion) => {
+      indice.set(registro.anio + "|" + registro.persona_id, posicion);
+    });
+    const momento = new Date().toISOString();
+    let agregados = 0, actualizados = 0;
+    for (const item of items) {
+      for (const feature of item.features) {
+        const identificador = String((feature.properties || {}).persona_id || "");
+        const clave = item.anio + "|" + identificador;
+        if (identificador && indice.has(clave)) {
+          const posicion = indice.get(clave), previo = registros[posicion];
+          const contenido = previo && previo.contenido
+            ? fusionarFeature(previo.contenido, feature) : feature;
+          registros[posicion] = registroDeFeature(contenido, item.anio, momento);
+          actualizados += 1;
+        } else {
+          registros.push(registroDeFeature(feature, item.anio, momento));
+          if (identificador) indice.set(clave, registros.length - 1);
+          agregados += 1;
+        }
+      }
+    }
+    return { registros, agregados, actualizados };
+  }
+
+  function exportarMemoria(registros) {
+    const grupos = new Map();
+    for (const registro of registros || []) {
+      if (!registro || !Number.isInteger(registro.anio)) continue;
+      const contenido = registro.contenido;
+      if (!contenido || contenido.type !== "Feature") continue;
+      if (!grupos.has(registro.anio)) grupos.set(registro.anio, []);
+      grupos.get(registro.anio).push(contenido);
+    }
+    return [...grupos.entries()].sort((uno, otro) => uno[0] - otro[0])
+      .map(([anio, features]) => ({ anio, datos: { type: "FeatureCollection", features } }));
+  }
+
+  function prepararActualizacion(texto, anioActual, fusionar) {
+    if (typeof texto !== "string" || !texto.trim()) {
+      throw new Error("El archivo de actualización está vacío.");
+    }
+    if (texto.length > 80 * 1024 * 1024) {
+      throw new Error("El archivo de actualización es demasiado grande.");
+    }
+    let contenido;
+    try {
+      contenido = JSON.parse(texto);
+    } catch {
+      throw new Error("El archivo de actualización no es un JSON válido.");
+    }
+    let anioPaquete = null;
+    if (contenido && contenido.anio !== undefined) {
+      anioPaquete = contenido.anio;
+      if (typeof anioPaquete === "boolean" || !Number.isInteger(anioPaquete)) {
+        throw new Error("El archivo de actualización tiene un año lectivo inválido.");
+      }
+      if (!fusionar && anioActual !== undefined && anioPaquete !== anioActual) {
+        throw new Error("El archivo de actualización pertenece al año " + anioPaquete +
+          " y el año en curso es " + anioActual + ". No se cargó para no mezclar datos.");
+      }
+    }
+    const datos = contenido && contenido.formato === "actualizacion-datos" ? contenido.datos : contenido;
+    if (!datos || datos.type !== "FeatureCollection" || !Array.isArray(datos.features)) {
+      throw new Error("El archivo no tiene una colección de alumnos válida.");
+    }
+    const features = normalizarFeatures(datos.features);
     const preparados = { ...datos, features };
     const resumen = resumirDatos(preparados);
-    if (!resumen.alumnos) throw new Error("El archivo de actualización no contiene alumnos.");
+    if (!fusionar && !resumen.alumnos) throw new Error("El archivo de actualización no contiene alumnos.");
+    const memoria = [];
+    let memoriaPresente = false, memoriaAlumnos = 0;
+    if (contenido && Array.isArray(contenido.memoria)) {
+      memoriaPresente = true;
+      for (const item of contenido.memoria) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+        const anioItem = item.anio;
+        if (typeof anioItem === "boolean" || !Number.isInteger(anioItem)) continue;
+        const datosItem = item.datos;
+        if (!datosItem || datosItem.type !== "FeatureCollection" || !Array.isArray(datosItem.features)) continue;
+        const limpias = normalizarFeatures(datosItem.features);
+        memoriaAlumnos += limpias.filter(feature => Alumnos.student(feature)).length;
+        memoria.push({ anio: anioItem, features: limpias });
+      }
+    }
     return { datos: preparados, resumen,
-      generado: contenido && typeof contenido.generado === "string" ? contenido.generado : "" };
+      generado: contenido && typeof contenido.generado === "string" ? contenido.generado : "",
+      anio: anioPaquete, memoria, memoriaPresente, memoriaAlumnos };
   }
 
   function crearBackend(opciones) {
@@ -473,6 +591,8 @@
         const estado = await cargarEstado();
         await comprobarRevision(payload.revision, estado.revision);
         const activos = [], egresados = [];
+        const cierre = estado.datos.features.filter(feature => Alumnos.student(feature))
+          .map(feature => JSON.parse(JSON.stringify(feature)));
         let promovidos = 0, permanecen = 0, sinGrado = 0;
         for (const feature of estado.datos.features) {
           if (!Alumnos.student(feature)) { activos.push(feature); continue; }
@@ -502,22 +622,25 @@
         const anioActual = estado.anio, anioEgreso = estado.anio_egreso;
         const respaldo = await almacen.respaldar();
         const momento = new Date().toISOString();
-        const nuevosRegistros = egresados.map(feature => {
-          const props = feature.properties || {};
-          const geometry = feature.geometry || {}, coords = geometry.coordinates;
-          const ubicado = geometry.type === "Point" && Array.isArray(coords) && coords.length === 2;
-          return { anio: anioEgreso, persona_id: String(props.persona_id || ""),
-            nombre: String(props.nombre_persona || ""), grado: etiquetaGrado(feature),
-            dni: String(props.dni || ""), direccion: String(props.direccion_texto || ""),
-            telefono: String(props.telefono_contacto_familia || ""), ubicado,
-            contenido: feature, promovido_en: momento };
-        });
+        const nuevosRegistros = [], vistos = new Set();
+        for (const feature of cierre) {
+          const registro = registroDeFeature(feature, anioEgreso, momento);
+          if (registro.persona_id && vistos.has(registro.persona_id)) continue;
+          if (registro.persona_id) vistos.add(registro.persona_id);
+          nuevosRegistros.push(registro);
+        }
+        const clavesCierre = new Set(nuevosRegistros.filter(registro => registro.persona_id)
+          .map(registro => registro.anio + "|" + registro.persona_id));
+        const memoriaPrevia = (estado.memoria || []).filter(registro =>
+          !(registro.anio === anioEgreso && registro.persona_id &&
+            clavesCierre.has(registro.anio + "|" + registro.persona_id)));
         const nuevoAnio = Math.max(anioActual, anioEgreso + 1);
         const revision = await almacen.guardar(estado.revision,
           { ...estado.datos, features: activos },
           { anio: nuevoAnio, anio_egreso: nuevoAnio,
-            memoria: (estado.memoria || []).concat(nuevosRegistros) });
+            memoria: memoriaPrevia.concat(nuevosRegistros) });
         return { alumnos, promovidos, permanecen, egresados: egresados.length, sin_grado: sinGrado,
+          memoria_guardados: nuevosRegistros.length,
           anio_anterior: anioEgreso, anio_nuevo: nuevoAnio, anio_egreso: nuevoAnio,
           respaldo, revision };
       },
@@ -663,22 +786,27 @@
       },
 
       async exportarActualizacion() {
-        const { revision, datos, anio } = await cargarEstado();
+        const { revision, datos, anio, memoria } = await cargarEstado();
         const fecha = new Date(), pad = valor => String(valor).padStart(2, "0");
         const marca = fecha.getFullYear() + pad(fecha.getMonth() + 1) + pad(fecha.getDate()) + "-" +
           pad(fecha.getHours()) + pad(fecha.getMinutes());
+        const memoriaPaquete = exportarMemoria(memoria);
+        const ciclos = Array.from(new Set([anio].concat(memoriaPaquete.map(item => item.anio))))
+          .filter(Number.isInteger).sort((uno, otro) => uno - otro);
         return {
           nombre: "actualizacion-EP39-" + anio + "-" + marca + ".json",
           tipo: "application/json",
           contenido: JSON.stringify({
             aplicacion: "escuela39-simple",
             formato: "actualizacion-datos",
-            version: 1,
+            version: 2,
             generado: fecha.toISOString(),
             revision_origen: revision,
             anio,
+            ciclos_lectivos: ciclos,
             resumen: resumirDatos(datos),
-            datos
+            datos,
+            memoria: memoriaPaquete
           }, null, 2)
         };
       },
@@ -687,16 +815,42 @@
         payload = payload || {};
         const estado = await cargarEstado();
         await comprobarRevision(payload.revision, estado.revision);
-        const { datos, resumen, generado } = prepararActualizacion(payload.contenido, estado.anio);
+        const fusionar = !!payload.fusionar;
+        const paquete = prepararActualizacion(payload.contenido, estado.anio, fusionar);
+        const datos = paquete.datos;
         const previas = listaSalidas(estado.datos);
+        let memoria = Array.isArray(estado.memoria) ? estado.memoria.slice() : [];
+        let statsActivos = { agregados: datos.features.length, actualizados: 0 };
+        let statsMemoria = { agregados: 0, actualizados: 0 };
+        if (fusionar) {
+          const activos = fusionarActivos(estado.datos.features, datos.features, estado.anio, paquete.anio);
+          datos.features = activos.features;
+          statsActivos = { agregados: activos.agregados, actualizados: activos.actualizados };
+          if (paquete.memoriaPresente) {
+            const fusion = fusionarMemoria(memoria, paquete.memoria);
+            memoria = fusion.registros;
+            statsMemoria = { agregados: fusion.agregados, actualizados: fusion.actualizados };
+          }
+        } else if (paquete.memoriaPresente) {
+          const momento = new Date().toISOString();
+          memoria = [];
+          for (const item of paquete.memoria) {
+            for (const feature of item.features) memoria.push(registroDeFeature(feature, item.anio, momento));
+          }
+          statsMemoria = { agregados: memoria.length, actualizados: 0 };
+        }
         if (Array.isArray(datos.salidas)) {
-          if (payload.fusionar) datos.salidas = fusionarSalidas(previas, datos.salidas);
+          if (fusionar) datos.salidas = fusionarSalidas(previas, datos.salidas);
         } else {
           datos.salidas = previas.slice();
         }
         const respaldo = await almacen.respaldar();
-        const revision = await almacen.guardar(estado.revision, datos);
-        return { ...resumen, generado, anio: estado.anio, respaldo, revision };
+        const revision = await almacen.guardar(estado.revision, datos, { memoria });
+        return { ...paquete.resumen, generado: paquete.generado, anio: estado.anio,
+          fusionado: fusionar,
+          activos_agregados: statsActivos.agregados, activos_actualizados: statsActivos.actualizados,
+          memoria_agregados: statsMemoria.agregados, memoria_actualizados: statsMemoria.actualizados,
+          respaldo, revision };
       },
 
       async exportarXLSX(grado) {

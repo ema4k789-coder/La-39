@@ -13,16 +13,16 @@
   <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="iconos/icon-192.png">
   <link rel="stylesheet" href="leaflet/leaflet.css">
-  <link rel="stylesheet" href="estilos.css?v=12">
+  <link rel="stylesheet" href="estilos.css?v=13">
   <link rel="stylesheet" href="estilos-ios.css?v=1">
   <link rel="stylesheet" href="estilos-acceso.css?v=1">
-  <script src="version.js?v=2"></script>
+  <script src="version.js?v=3"></script>
   <script>window.MODO_LOCAL = true;</script>
   <style>
     html, body { height: 100%; }
     body { display: flex; flex-direction: column; }
     main { flex: 1 1 auto; min-height: 0; }
-    #panelPadron { flex: 1 1 auto; min-height: 0; }
+    #panelPadron, #panelRevision { flex: 1 1 auto; min-height: 0; }
   </style>
 </head>
 <body>
@@ -32,6 +32,7 @@
       <nav class="panel-tabs" aria-label="Paneles" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <button type="button" class="panel-tab active" data-panel="mapa">Mapa alumnos</button>
         <button type="button" class="panel-tab" data-panel="padron">Padrón</button>
+        <button type="button" class="panel-tab" data-panel="revision">Revisión <span id="revisionBadge" class="revision-badge" hidden>0</span></button>
         <button type="button" class="panel-tab" data-panel="salidas">Salidas</button>
       </nav>
       <button id="salirApp" class="salir" type="button" title="Cerrar la aplicación">Salir</button>
@@ -188,6 +189,16 @@
   <section id="panelPadron" hidden style="flex:1;min-height:0;display:none">
     <iframe id="padronFrame" data-src="padron/index.html" title="Padrón EP 39" style="width:100%;height:100%;border:0;display:block;background:#fff"></iframe>
   </section>
+  <section id="panelRevision" hidden style="flex:1;min-height:0;display:none;overflow:auto">
+    <div class="revision-contenedor">
+      <div class="revision-cabecera">
+        <h2>Revisión de la actualización</h2>
+        <p>Cambios de la base del 26/11/2026. Esta lista está separada del mapa y del padrón: los nombres y DNI repetidos no se mezclan con la base.</p>
+        <div id="revisionResumen" class="revision-resumen" role="status" aria-live="polite"></div>
+      </div>
+      <div id="revisionLista" class="revision-lista"></div>
+    </div>
+  </section>
   <footer id="status" role="status" aria-live="polite">Iniciando...</footer>
   <script>
     (function(){
@@ -231,6 +242,7 @@
       var main = document.querySelector('main');
       var padron = document.getElementById('panelPadron');
       var salidas = document.getElementById('panelSalidas');
+      var revisionPanel = document.getElementById('panelRevision');
       var actions = document.getElementById('mapActions');
       var footer = document.getElementById('status');
       function recargarPadron(){
@@ -245,10 +257,12 @@
       function show(panel){
         var isPadron = panel === 'padron';
         var isSalidas = panel === 'salidas';
-        var fueraDelMapa = isPadron || isSalidas;
+        var isRevision = panel === 'revision';
+        var fueraDelMapa = isPadron || isSalidas || isRevision;
         if(main) main.style.display = fueraDelMapa ? 'none' : '';
         if(padron){ padron.hidden = !isPadron; padron.style.display = isPadron ? 'flex' : 'none'; }
         if(salidas){ salidas.hidden = !isSalidas; salidas.style.display = isSalidas ? 'flex' : 'none'; }
+        if(revisionPanel){ revisionPanel.hidden = !isRevision; revisionPanel.style.display = isRevision ? 'block' : 'none'; }
         if(actions) actions.style.display = fueraDelMapa ? 'none' : '';
         if(footer) footer.style.display = fueraDelMapa ? 'none' : '';
         tabs.forEach(function(t){
@@ -259,6 +273,8 @@
           recargarPadron();
         } else if(isSalidas){
           if(window.SalidasApp && window.SalidasApp.alMostrar) window.SalidasApp.alMostrar();
+        } else if(isRevision){
+          if(window.RevisionApp && window.RevisionApp.alMostrar) window.RevisionApp.alMostrar();
         } else if(window.MapaApp && window.MapaApp.alMostrar){
           window.MapaApp.alMostrar();
         }
@@ -355,6 +371,6 @@
     </div>
   </dialog>
   <script src="leaflet/leaflet.js"></script>
-  <script src="nucleo/arranque.js?v=10"></script>
+  <script src="nucleo/arranque.js?v=12"></script>
 </body>
 </html>

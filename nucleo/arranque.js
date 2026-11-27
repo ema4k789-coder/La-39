@@ -36,7 +36,7 @@
         location.href = ruta;
       }
     };
-    await cargar("app.js?v=16");
+    await cargar("app.js?v=18");
   }
 
   function leerBase64(blob) {
@@ -91,7 +91,7 @@
     await cargar("vendor/xlsx.full.min.js");
     for (const src of ["nucleo/logica.js", "nucleo/tramos.js", "nucleo/calles.js",
       "nucleo/geocodificador.js", "nucleo/alumnos.js", "nucleo/almacen.js",
-      "nucleo/excel.js?v=2", "nucleo/backend.js?v=3"]) {
+      "nucleo/excel.js?v=2", "nucleo/backend.js?v=4"]) {
       await cargar(src);
     }
     if (!window.DATOS_CALLES || !window.DATOS_CALLES.datos) {
@@ -111,7 +111,7 @@
     const almacen = window.Almacen.crearAlmacenIndexedDB({
       nombre: params.get("db") || "escuela39", revision: inicial.revision, datos: inicial.datos,
       anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria,
-      semillaAnterior: 151
+      semillaAnterior: [151, 171]
     });
     if (params.has("reiniciar")) await almacen.reiniciar(inicial.datos, inicial.revision,
       { anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria });
@@ -175,8 +175,9 @@
         }
       }
     };
-    await cargar("app.js?v=16");
+    await cargar("app.js?v=18");
     await cargar("salidas.js?v=1");
+    await cargar("revision.js?v=1");
   }
 
   (local ? arrancarLocal() : arrancarServidor()).catch(error =>

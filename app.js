@@ -587,6 +587,23 @@ function clearFilters() {
   $("search").focus();
 }
 
+const ICONO_EDITAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+const ICONO_ELIMINAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+function botonFila(etiqueta, icono, accion, peligro) {
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "item-action" + (peligro ? " peligro" : "");
+  boton.title = etiqueta;
+  boton.setAttribute("aria-label", etiqueta);
+  boton.innerHTML = icono;
+  boton.addEventListener("click", evento => {
+    evento.stopPropagation();
+    accion();
+  });
+  return boton;
+}
+
 function render() {
   const students = visibleStudents();
   const total = features.filter(student);
@@ -603,7 +620,10 @@ function render() {
   $("list").textContent = "";
   pointLayer.clearLayers();
   students.forEach(f => {
-    const p = f.properties, item = document.createElement("button");
+    const p = f.properties, fila = document.createElement("div");
+    const item = document.createElement("button");
+    fila.className = "item-row";
+    item.type = "button";
     item.className = "item" + (p.persona_id === selectedId ? " selected" : "");
     const name = document.createElement("strong"), info = document.createElement("span");
     name.textContent = p.nombre_persona || "Sin nombre";
@@ -614,7 +634,15 @@ function render() {
       locationStatus + (p.direccion_texto ? " · " + p.direccion_texto : "");
     item.append(name, info);
     item.addEventListener("click", () => activarAlumno(p));
-    $("list").appendChild(item);
+    const acciones = document.createElement("span"), nombre = p.nombre_persona || "el alumno";
+    acciones.className = "item-actions";
+    acciones.append(
+      botonFila("Editar ficha de " + nombre, ICONO_EDITAR, () => {
+        if (selectStudent(p.persona_id)) openStudentDialog();
+      }),
+      botonFila("Eliminar a " + nombre, ICONO_ELIMINAR, () => eliminarAlumno(p.persona_id), true));
+    fila.append(item, acciones);
+    $("list").appendChild(fila);
     if (validGeometry(f)) {
       const [lng, lat] = f.geometry.coordinates;
       const resaltado = p.persona_id === selectedId;
@@ -731,27 +759,29 @@ function updateDeleteButton() {
   button.title = selectedId ? "" : "Seleccioná un alumno guardado para eliminarlo.";
 }
 
-$("deleteStudent").onclick = async () => {
+async function eliminarAlumno(id) {
   if (locationSaving || formSaving) { status("Esperá a que termine el guardado."); return; }
-  const feature = selectedId ? selectedFeature() : null;
-  if (!feature) { status("Seleccioná un alumno guardado para eliminarlo."); return; }
-  const p = feature.properties, name = p.nombre_persona || "el alumno";
-  const aviso = dirty ? " También se descartan los cambios sin guardar de esta ficha." : "";
+  const feature = features.find(f => f.properties.persona_id === id);
+  if (!feature) { status("No se encontró el alumno para eliminar."); return; }
+  const p = feature.properties, name = p.nombre_persona || "el alumno", enFicha = id === selectedId;
+  const aviso = enFicha && dirty ? " También se descartan los cambios sin guardar de esta ficha." : "";
   if (!confirm("¿Eliminar a " + name + " (" + gradeLabel(gradeOf(p)) + ")? Se borran su ficha y su ubicación. " +
       "Antes se guarda un respaldo." + aviso)) return;
   formSaving = true;
-  $("deleteStudent").disabled = true;
+  if (enFicha) $("deleteStudent").disabled = true;
   status("Eliminando a " + name + "...");
   try {
-    const result = await post("/api/eliminar", { revision, id: selectedId });
-    await loadData();
-    pendingPoint = null; dirty = false; fichaDirty = false; setPicking(false); clearPreview();
-    $("form").reset(); $("form").hidden = true;
-    $("duplicateDni").hidden = true; $("duplicateDni").textContent = "";
-    $("detailStatus").textContent = "Alumno eliminado. Seleccioná otro alumno o creá uno nuevo.";
-    $("locationHelp").textContent = "Primero elegí un punto en el mapa o ingresá latitud y longitud.";
-    updateMoveGrade(); updateDeleteButton();
-    if ($("studentDialog").open) closeStudentDialog();
+    const result = await post("/api/eliminar", { revision, id });
+    await loadData(!enFicha);
+    if (enFicha) {
+      pendingPoint = null; dirty = false; fichaDirty = false; setPicking(false); clearPreview();
+      $("form").reset(); $("form").hidden = true;
+      $("duplicateDni").hidden = true; $("duplicateDni").textContent = "";
+      $("detailStatus").textContent = "Alumno eliminado. Seleccioná otro alumno o creá uno nuevo.";
+      $("locationHelp").textContent = "Primero elegí un punto en el mapa o ingresá latitud y longitud.";
+      updateMoveGrade(); updateDeleteButton();
+      if ($("studentDialog").open) closeStudentDialog();
+    }
     status("Alumno eliminado del padrón. Respaldo guardado: " + (result.respaldo || "sí") + ".");
   } catch (error) {
     status("No se pudo eliminar: " + error.message);
@@ -759,6 +789,11 @@ $("deleteStudent").onclick = async () => {
   } finally {
     formSaving = false;
   }
+}
+
+$("deleteStudent").onclick = () => {
+  if (!selectedId) { status("Seleccioná un alumno guardado para eliminarlo."); return; }
+  eliminarAlumno(selectedId);
 };
 
 $("form").elements.grado.addEventListener("change", updateMoveGrade);
@@ -1349,13 +1384,13 @@ $("mergeUpdate").onclick = () => enviarActualizacion(true);
 function renderYear() {
   $("yearValue").value = schoolYear ? String(schoolYear) : "";
   $("yearCurrent").textContent = schoolYear
-    ? "Año en curso: " + schoolYear + " · Memoria de egresados: " + (graduationYear || schoolYear) + "."
+    ? "Año en curso: " + schoolYear + " · Año guardado en la Memoria: " + (graduationYear || schoolYear) + "."
     : "Todavía no se cargó el año lectivo.";
   const pending = !!schoolYear && !!graduationYear && schoolYear > graduationYear;
   $("yearNextInfo").textContent = pending
-    ? "El año " + schoolYear + " ya está abierto. Antes de abrir otro, promocioná los grupos para archivar a los egresados de " + graduationYear + "."
+    ? "El año " + schoolYear + " ya está abierto. Antes de abrir otro, promocioná los grupos para guardar el año " + graduationYear + " completo en la Memoria."
     : schoolYear
-      ? "Se abrirá el año " + (schoolYear + 1) + " y los grados se mantienen hasta que apliques la Promoción. La promoción archivará a los egresados de 6.° en la memoria de " + (graduationYear || schoolYear) + "."
+      ? "Se abrirá el año " + (schoolYear + 1) + " y los grados se mantienen hasta que apliques la Promoción. La promoción guardará el año " + (graduationYear || schoolYear) + " completo en la Memoria (todos los alumnos con su grado)."
       : "Primero establecé el año en curso.";
   $("openNextYear").disabled = !schoolYear || pending;
 }
@@ -1420,11 +1455,11 @@ function renderPromotion() {
   box.textContent = "";
   const intro = document.createElement("p");
   intro.className = "hint";
-  intro.textContent = (anioEgreso ? "Promoción · egresos " + anioEgreso : "Promoción") + " · " +
+  intro.textContent = (anioEgreso ? "Promoción · año guardado " + anioEgreso : "Promoción") + " · " +
     plan.alumnos + " alumnos · " + plan.pasan + " pasan de grado · " + plan.permanecen + " permanecen · " +
-    plan.egresan + " egresan a la memoria." +
+    plan.egresan + " egresan a la Memoria. Se guarda el año completo." +
     (schoolYear && anioEgreso && schoolYear !== anioEgreso
-      ? " El año en curso " + schoolYear + " se mantiene y se archivan los egresados de " + anioEgreso + "." : "");
+      ? " El año en curso " + schoolYear + " se mantiene y se guarda el año " + anioEgreso + " completo." : "");
   box.appendChild(intro);
   const table = document.createElement("table");
   table.className = "promotion-table";
@@ -1473,7 +1508,9 @@ $("applyPromotion").onclick = async () => {
   }
   const resumen = "Se promoverán " + plan.alumnos + " alumnos: " + plan.pasan + " pasan de grado, " +
     plan.permanecen + " permanecen y " + plan.egresan + " de 6.° pasan a la memoria " +
-    (graduationYear || schoolYear) + ". Se guardará un respaldo antes de aplicar los cambios. ¿Continuar?";
+    (graduationYear || schoolYear) + ". Además se guardará el año completo (" + plan.alumnos +
+    " alumnos con su grado actual) en la Memoria del año " + (graduationYear || schoolYear) +
+    " y el año nuevo comenzará solo con los promovidos. Se guardará un respaldo antes de aplicar los cambios. ¿Continuar?";
   if (!confirm(resumen)) return;
   $("applyPromotion").disabled = true;
   $("promotionStatus").textContent = "Promoviendo grupos...";
@@ -1487,7 +1524,8 @@ $("applyPromotion").onclick = async () => {
     await loadData();
     $("fit").click();
     status("Promoción realizada: " + result.promovidos + " pasaron de grado · " + result.permanecen +
-      " permanecen · " + result.egresados + " egresaron a la memoria " + result.anio_anterior +
+      " permanecen · " + result.egresados + " egresaron · " + (result.memoria_guardados || 0) +
+      " alumnos guardados en la Memoria del año " + result.anio_anterior +
       ". Respaldo: " + result.respaldo + ".");
   } catch (error) {
     $("promotionStatus").textContent = "No se pudo promover: " + error.message;
@@ -1510,7 +1548,7 @@ async function loadMemory(anio) {
     if (data.anio != null) select.value = String(data.anio);
     select.disabled = !data.anios.length;
     if (data.anio == null) {
-      $("memoryInfo").textContent = "Todavía no hay años guardados. La memoria se completa cuando promocionás los grupos y egresan los alumnos de 6.°.";
+      $("memoryInfo").textContent = "Todavía no hay años guardados. La Memoria se completa al promocionar: se guarda el año completo con el grado de cada alumno.";
       return;
     }
     const year = data.anios.find(item => item.anio === data.anio);
