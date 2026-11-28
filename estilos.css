@@ -303,5 +303,6 @@ input:focus,select:focus,textarea:focus{border-color:#1c1206;outline-color:#1c12
 .revision-editor .revision-ancho{grid-column:1/-1}
 .revision-aviso{margin:0;color:#475569;font-size:11.5px;line-height:1.4}
 .revision-etiqueta-estado{padding:4px 10px;border-radius:999px;background:#e2e8f0;color:#334155;font-size:11px;font-weight:800;text-transform:uppercase}
+#form input[name="nombre_persona"]{text-transform:uppercase}
 .revision-item.revision-quitado{opacity:.62}
 @media(max-width:480px){.revision-campos{grid-template-columns:1fr}}

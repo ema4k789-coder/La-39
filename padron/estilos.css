@@ -1217,3 +1217,5 @@ dialog::backdrop {
   .fila-acciones { flex-direction: column; justify-content: center;
     gap: 6px; padding: 8px 8px 8px 0; }
 }
+#campoNombre{text-transform:uppercase}
+.fila-nombre{text-transform:uppercase}

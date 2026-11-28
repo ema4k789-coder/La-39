@@ -307,7 +307,15 @@
     let indiceCalles = null;
 
     async function cargarEstado() {
-      return almacen.cargar();
+      const estado = await almacen.cargar();
+      if (estado && estado.datos && Array.isArray(estado.datos.features)) {
+        for (const feature of estado.datos.features) {
+          const props = feature.properties || {};
+          if (props.nombre_persona) props.nombre_persona = Alumnos.upperName(props.nombre_persona);
+        }
+        estado.datos.features.sort(Alumnos.compareBySurname);
+      }
+      return estado;
     }
 
     function aniosMemoria(memoria) {
@@ -414,6 +422,24 @@
           datos: estado.datos };
       },
 
+      async normalizarNombres() {
+        const { revision, datos } = await almacen.cargar();
+        let cambios = 0;
+        for (const feature of datos.features) {
+          const props = feature.properties || {};
+          const nombre = String(props.nombre_persona || "");
+          const mayusculas = Alumnos.upperName(nombre);
+          if (nombre && nombre !== mayusculas) {
+            props.nombre_persona = mayusculas;
+            cambios += 1;
+          }
+        }
+        if (!cambios) return { cambios: 0 };
+        const respaldo = await almacen.respaldar();
+        const nuevaRevision = await almacen.guardar(revision, datos);
+        return { cambios, respaldo, revision: nuevaRevision };
+      },
+
       async mapaBase() {
         return { localidades: datosCalles.localities, municipio: datosCalles.municipality,
           lugares: datosCalles.places };
@@ -469,6 +495,7 @@
         }
         const originalAddress = feature.properties.direccion_texto || "";
         for (const key of EDITABLE) feature.properties[key] = String(props[key] || "").trim();
+        feature.properties.nombre_persona = Alumnos.upperName(feature.properties.nombre_persona);
         feature.properties.responsable_nombre_completo = feature.properties.referente_familiar;
         feature.properties.dni = dni;
         feature.properties.alumno_cuil = dni;
@@ -537,6 +564,10 @@
         const { revision, datos, anio } = await cargarEstado();
         await comprobarRevision(payload.revision, revision);
         const importadas = excel.leer(payload, anio);
+        for (const feature of importadas) {
+          const props = feature.properties || {};
+          if (props.nombre_persona) props.nombre_persona = Alumnos.upperName(props.nombre_persona);
+        }
         const conservar = payload.conservar_ubicados === undefined ? true : payload.conservar_ubicados;
         if (typeof conservar !== "boolean") {
           throw new Error("La opción de conservar ubicaciones no es válida.");
@@ -818,6 +849,10 @@
         const fusionar = !!payload.fusionar;
         const paquete = prepararActualizacion(payload.contenido, estado.anio, fusionar);
         const datos = paquete.datos;
+        for (const feature of datos.features) {
+          const props = feature.properties || {};
+          if (props.nombre_persona) props.nombre_persona = Alumnos.upperName(props.nombre_persona);
+        }
         const previas = listaSalidas(estado.datos);
         let memoria = Array.isArray(estado.memoria) ? estado.memoria.slice() : [];
         let statsActivos = { agregados: datos.features.length, actualizados: 0 };

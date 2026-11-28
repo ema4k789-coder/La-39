@@ -155,7 +155,7 @@
         division,
         direccion: T.normalizarDireccion(repararTexto(direccion)),
         telefono,
-        responsable: T.normalizarNombre(repararTexto(responsable)),
+        responsable: repararTexto(responsable),
         nacionalidad,
         actividad,
         observaciones

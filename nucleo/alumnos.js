@@ -52,6 +52,23 @@
     return texto(value).toLowerCase().replace(/\s+/g, " ");
   }
 
+  function surnameKey(feature) {
+    const name = texto((feature && feature.properties || {}).nombre_persona);
+    const cut = name.indexOf(",");
+    return [plainText(cut >= 0 ? name.slice(0, cut) : name),
+      plainText(cut >= 0 ? name.slice(cut + 1) : "")];
+  }
+
+  function compareBySurname(first, second) {
+    const a = surnameKey(first), b = surnameKey(second);
+    return a[0].localeCompare(b[0], "es", { sensitivity: "base" }) ||
+      a[1].localeCompare(b[1], "es", { sensitivity: "base" });
+  }
+
+  function upperName(value) {
+    return texto(value).toLocaleUpperCase("es");
+  }
+
   function located(feature) {
     const geometry = feature && feature.geometry || {}, coordinates = geometry.coordinates;
     return geometry.type === "Point" && Array.isArray(coordinates) && coordinates.length === 2;
@@ -137,5 +154,6 @@
   }
 
   return { texto, student, parseGrade, studentDni, normalizeStudentNumber,
-    duplicateImportRows, plainText, addressKey, located, mergeGrade, replaceGrade };
+    duplicateImportRows, plainText, addressKey, located, mergeGrade, replaceGrade,
+    compareBySurname, upperName };
 });

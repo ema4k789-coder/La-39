@@ -175,6 +175,21 @@ function post(path, body) {
 }
 function student(f) { return f.properties && (f.properties.es_alumno_central === true || f.properties.rol === "alumno"); }
 function gradeOf(p) { return String(p.curso || "") + "-" + String(p.division || "").toUpperCase(); }
+function plainName(value) {
+  return String(value || "").normalize("NFKD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/gi, " ").toLowerCase().trim();
+}
+function compareBySurname(first, second) {
+  const key = f => {
+    const name = String((f.properties || {}).nombre_persona || "").trim();
+    const cut = name.indexOf(",");
+    return [plainName(cut >= 0 ? name.slice(0, cut) : name),
+      plainName(cut >= 0 ? name.slice(cut + 1) : "")];
+  };
+  const a = key(first), b = key(second);
+  return a[0].localeCompare(b[0], "es", { sensitivity: "base" }) ||
+    a[1].localeCompare(b[1], "es", { sensitivity: "base" });
+}
 function label(f) { return (f.properties.curso || "") + "° " + (f.properties.division || ""); }
 function normalizedDni(p) { return String(p.dni || p.alumno_cuil || "").replace(/\D/g, ""); }
 function duplicateDniGroups() {
@@ -284,7 +299,7 @@ function visibleStudents() {
     if (idsSalidaActiva && !idsSalidaActiva.has(p.persona_id)) return false;
     return !term || [p.nombre_persona, p.numero_alumno, p.dni, p.direccion_texto, p.referente_familiar].some(v =>
       String(v || "").toLocaleLowerCase("es").includes(term));
-  });
+  }).sort(compareBySurname);
 }
 
 function renderGradeStats() {

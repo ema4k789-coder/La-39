@@ -36,7 +36,7 @@
         location.href = ruta;
       }
     };
-    await cargar("app.js?v=18");
+    await cargar("app.js?v=19");
   }
 
   function leerBase64(blob) {
@@ -91,7 +91,7 @@
     await cargar("vendor/xlsx.full.min.js");
     for (const src of ["nucleo/logica.js", "nucleo/tramos.js", "nucleo/calles.js",
       "nucleo/geocodificador.js", "nucleo/alumnos.js", "nucleo/almacen.js",
-      "nucleo/excel.js?v=2", "nucleo/backend.js?v=4"]) {
+      "nucleo/excel.js?v=2", "nucleo/backend.js?v=5"]) {
       await cargar(src);
     }
     if (!window.DATOS_CALLES || !window.DATOS_CALLES.datos) {
@@ -117,6 +117,7 @@
       { anio: inicial.anio, anio_egreso: inicial.anio_egreso, memoria: inicial.memoria });
     const backend = window.BackendApp.crearBackend({ almacen, datosCalles,
       buscarCalles: consulta => window.Geocodificador.buscar(api, consulta), excel: window.ExcelApp });
+    try { await backend.normalizarNombres(); } catch (error) { console.warn("Nombres:", error); }
     const consultas = {
       "/api/estado": () => backend.estado(),
       "/api/datos": () => backend.datos(),
@@ -175,7 +176,7 @@
         }
       }
     };
-    await cargar("app.js?v=18");
+    await cargar("app.js?v=19");
     await cargar("salidas.js?v=1");
     await cargar("revision.js?v=3");
   }

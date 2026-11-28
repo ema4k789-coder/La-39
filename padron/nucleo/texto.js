@@ -2,7 +2,7 @@
 // Normalización de textos, fechas, documentos y direcciones para la búsqueda
 // y para acomodar los datos que vienen de Excel.
 (function() {
-  const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "e", "da", "das", "do", "dos"]);
+
   const ORDINALES = { "1": "primero", "2": "segundo", "3": "tercero", "4": "cuarto", "5": "quinto", "6": "sexto" };
   const TIPOS = {
     av: "avenida", avda: "avenida", avenida: "avenida",
@@ -41,16 +41,7 @@
 
   function normalizarNombre(texto) {
     const limpio = limpiarEspacios(texto);
-    if (!limpio) return "";
-    const letras = limpio.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, "");
-    if (letras && limpio === limpio.toUpperCase()) {
-      return limpio.split(" ").map((palabra, indice) => {
-        if (indice && PARTICULAS.has(palabra.toLowerCase())) return palabra.toLowerCase();
-        return palabra.split("-").map(parte => parte.charAt(0).toUpperCase() +
-          parte.slice(1).toLowerCase()).join("-");
-      }).join(" ");
-    }
-    return limpio;
+    return limpio ? limpio.toLocaleUpperCase("es") : "";
   }
 
   function normalizarDireccion(texto) {
